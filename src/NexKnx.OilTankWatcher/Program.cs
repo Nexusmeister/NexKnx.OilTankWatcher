@@ -3,6 +3,7 @@ using NexKnx.OilTankWatcher;
 using NexKnx.OilTankWatcher.Configuration;
 using NexKnx.OilTankWatcher.Knx;
 using NexKnx.OilTankWatcher.Mqtt;
+using NexKnx.OilTankWatcher.Persistence;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -20,6 +21,8 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<RuntimeEstima
 
 builder.Services.AddSingleton<MqttOilLevelClient>();
 builder.Services.AddSingleton<IKnxGateway, FalconKnxGateway>();
+builder.Services.AddSingleton<IHistoryRepository>(sp =>
+    new SqliteHistoryRepository(sp.GetRequiredService<RuntimeEstimationOptions>().DatabasePath));
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();

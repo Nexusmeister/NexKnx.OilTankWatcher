@@ -11,4 +11,9 @@ public sealed class RuntimeEstimationOptions
 
     /// Mindestanzahl an Messpunkten, bevor eine Schätzung ausgegeben wird.
     public int MinimumSamples { get; set; } = 5;
+
+    /// Pfad zur SQLite-Datenbankdatei für die persistente Historie.
+    /// Für Docker-Deployments auf ein gemountetes Volume zeigen lassen
+    /// (siehe docker-compose.yml), damit die Historie Neustarts überlebt.
+    public string DatabasePath { get; set; } = "history.db";
 }

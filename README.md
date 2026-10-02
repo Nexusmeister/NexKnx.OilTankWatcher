@@ -153,12 +153,36 @@ Die Unit-Tests decken Plausibilitätsprüfung, Glättung, Hysterese,
 Störungserkennung, Sende-Gate und Restreichweitenschätzung ab (47 Tests,
 reine Logik ohne MQTT-/KNX-Abhängigkeiten).
 
+## Persistente Historie (SQLite)
+
+Die Füllstandshistorie für die Restreichweitenschätzung wird in einer
+lokalen SQLite-Datenbank gespeichert (`Microsoft.Data.Sqlite`) und
+überlebt damit einen Neustart des Dienstes. Pfad über
+`RuntimeEstimation:DatabasePath` konfigurierbar (Standard `history.db`
+im Arbeitsverzeichnis). Im Docker-Betrieb zeigt das Compose-Setup auf
+`/data/history.db` mit einem eigenen Volume (`history-data`), damit die
+Datei auch Container-Neustarts übersteht.
+
+Beim Start lädt der Dienst die gespeicherte Historie (`IHistoryRepository`,
+`src/.../Persistence/SqliteHistoryRepository.cs`); bei jedem neuen
+Tageswert wird er angehängt und älter als `RuntimeEstimation:HistoryDays`
+werdende Einträge werden verworfen. Fehler beim Laden/Schreiben werden nur
+geloggt, nicht fatal – der Dienst läuft bei einem DB-Problem mit leerer
+bzw. nicht aktualisierter Historie weiter.
+
 ## Grenzen / bewusste Vereinfachungen
 
-- Die 30-Tage-Historie für die Restreichweitenschätzung liegt nur im
-  Arbeitsspeicher und beginnt nach einem Neustart neu. Für eine
-  persistente Historie über Neustarts hinweg müsste sie z. B. in SQLite
-  abgelegt werden – im aktuellen Umfang nicht enthalten.
 - Das MQTT-Payload-Parsing akzeptiert sowohl reinen Klartext (Standard
   des AI-on-the-edge-device) als auch ein einfaches JSON-Objekt
   `{"value": 67.3}` als Fallback.
+- Der Dockerfile-Default `DOTNET_gcServer=0` (Workstation- statt
+  Server-GC) ist für einen Pi mit wenigen Kernen ohnehin die sinnvollere
+  Wahl; zusätzlich wurde beim Cross-Build-Testen für arm64 unter
+  QEMU-Emulation (amd64-CI/Dev-Rechner) ein Absturzmuster im .NET-
+  Thread-Pool beobachtet, das mit Server-GC häufiger auftrat. Die
+  SQLite-Anbindung selbst lief unter QEMU/arm64 nach diesem Fix fehlerfrei;
+  ein davon unabhängiger, sporadischer Absturz tief in generischen
+  .NET-Async-Interna (ohne eigenen Code im Stacktrace) ließ sich unter
+  QEMU nicht vollständig ausschließen. Auf echter Pi-5-Hardware (kein
+  Emulator) sollte das nicht auftreten - vor dem produktiven Einsatz
+  trotzdem einmal real auf dem Pi gegenprüfen.

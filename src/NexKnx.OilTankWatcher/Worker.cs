@@ -1,6 +1,7 @@
 using NexKnx.OilTankWatcher.Configuration;
 using NexKnx.OilTankWatcher.Knx;
 using NexKnx.OilTankWatcher.Mqtt;
+using NexKnx.OilTankWatcher.Persistence;
 using NexKnx.OilTankWatcher.Processing;
 
 namespace NexKnx.OilTankWatcher;
@@ -16,6 +17,7 @@ public sealed class Worker : BackgroundService
 {
     private readonly MqttOilLevelClient _mqttClient;
     private readonly IKnxGateway _knxGateway;
+    private readonly IHistoryRepository _historyRepository;
     private readonly TankOptions _tankOptions;
     private readonly KnxOptions _knxOptions;
     private readonly RuntimeEstimationOptions _runtimeOptions;
@@ -36,6 +38,7 @@ public sealed class Worker : BackgroundService
     public Worker(
         MqttOilLevelClient mqttClient,
         IKnxGateway knxGateway,
+        IHistoryRepository historyRepository,
         TankOptions tankOptions,
         KnxOptions knxOptions,
         RuntimeEstimationOptions runtimeOptions,
@@ -43,6 +46,7 @@ public sealed class Worker : BackgroundService
     {
         _mqttClient = mqttClient;
         _knxGateway = knxGateway;
+        _historyRepository = historyRepository;
         _tankOptions = tankOptions;
         _knxOptions = knxOptions;
         _runtimeOptions = runtimeOptions;
@@ -58,6 +62,7 @@ public sealed class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await LoadPersistedHistoryAsync(stoppingToken);
         await ConnectKnxAsync(stoppingToken);
 
         _mqttClient.ValueReceived += OnRawValueReceived;
@@ -99,6 +104,49 @@ public sealed class Worker : BackgroundService
         }
     }
 
+    private async Task LoadPersistedHistoryAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _historyRepository.InitializeAsync(cancellationToken);
+
+            var retention = TimeSpan.FromDays(_runtimeOptions.HistoryDays);
+            var persisted = await _historyRepository.LoadRecentAsync(retention, cancellationToken);
+
+            foreach (var sample in persisted)
+            {
+                _history.Add(sample);
+            }
+
+            if (persisted.Count > 0)
+            {
+                // Verhindert, dass direkt nach einem Neustart erneut ein
+                // Tageswert aufgezeichnet wird, wenn der zuletzt persistierte
+                // Wert noch nicht 24h alt ist.
+                _lastDailySampleAt = persisted[^1].Timestamp;
+            }
+
+            _logger.LogInformation("{Count} persistierte Historienwerte geladen.", persisted.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Persistierte Historie konnte nicht geladen werden - starte mit leerer Historie.");
+        }
+    }
+
+    private async Task PersistSampleAsync(LevelSample sample)
+    {
+        try
+        {
+            await _historyRepository.AppendAsync(sample, CancellationToken.None);
+            await _historyRepository.PruneAsync(TimeSpan.FromDays(_runtimeOptions.HistoryDays), CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Historienwert konnte nicht in SQLite persistiert werden.");
+        }
+    }
+
     private void OnRawValueReceived(double rawPercent)
     {
         if (!_plausibilityFilter.TryAccept(rawPercent, out var rejectReason))
@@ -118,8 +166,10 @@ public sealed class Worker : BackgroundService
 
         if (now - _lastDailySampleAt >= TimeSpan.FromHours(24))
         {
-            _history.Add(new LevelSample(now, smoothed));
+            var sample = new LevelSample(now, smoothed);
+            _history.Add(sample);
             _lastDailySampleAt = now;
+            _ = PersistSampleAsync(sample);
         }
 
         // Sofort-Auswertung bei neuem Messwert, nicht auf den Minuten-Timer warten.

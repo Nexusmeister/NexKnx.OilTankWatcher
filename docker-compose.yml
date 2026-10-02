@@ -17,6 +17,8 @@ services:
     restart: unless-stopped
     depends_on:
       - mosquitto
+    volumes:
+      - history-data:/data
     # KNX IP-Routing nutzt Multicast (224.0.23.12) und benötigt auf dem Pi in
     # der Regel den Host-Netzwerkmodus, da Docker-Bridge-Netzwerke Multicast
     # standardmäßig nicht durchleiten. Für IP-Tunneling (Standard) reicht das
@@ -58,6 +60,8 @@ services:
       - RuntimeEstimation__Enabled=true
       - RuntimeEstimation__HistoryDays=30
       - RuntimeEstimation__MinimumSamples=5
+      - RuntimeEstimation__DatabasePath=/data/history.db
 
 volumes:
   mosquitto-data:
+  history-data:
