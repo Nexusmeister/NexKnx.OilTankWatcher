@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NexKnx.OilTankWatcher/NexKnx.OilTankWatcher.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NexKnx.OilTankWatcher.Tests/NexKnx.OilTankWatcher.Tests.csproj" />
+  </Folder>
+</Solution>

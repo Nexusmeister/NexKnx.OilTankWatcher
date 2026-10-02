@@ -1,0 +1,63 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: oiltank-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+
+  oiltank-watcher:
+    build:
+      context: .
+      dockerfile: src/NexKnx.OilTankWatcher/Dockerfile
+    container_name: oiltank-watcher
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    # KNX IP-Routing nutzt Multicast (224.0.23.12) und benötigt auf dem Pi in
+    # der Regel den Host-Netzwerkmodus, da Docker-Bridge-Netzwerke Multicast
+    # standardmäßig nicht durchleiten. Für IP-Tunneling (Standard) reicht das
+    # normale Bridge-Netzwerk, solange die KNX/IP-Schnittstelle vom Container
+    # aus erreichbar ist.
+    # network_mode: host
+    environment:
+      # MQTT
+      - Mqtt__Host=mosquitto
+      - Mqtt__Port=1883
+      - Mqtt__Topic=oiltank/main/value
+
+      # Tank
+      - Tank__NominalVolumeLiters=9100
+      - Tank__MaxStepPercent=5
+      - Tank__MedianWindowSize=5
+
+      # KNX - zuerst unbedingt mit einer freien Test-Gruppenadresse
+      # betreiben (siehe README), bevor echte GAs eingetragen werden!
+      - Knx__ConnectionType=Tunneling
+      - Knx__Tunneling__Host=192.168.178.21
+      - Knx__Tunneling__Port=3671
+      # true, da der Container im Docker-Bridge-Netz eine private Adresse an
+      # das KNX-Interface meldet, die vom LAN aus nicht erreichbar ist - das
+      # KNX-Interface muss stattdessen an die beobachtete Absenderadresse
+      # antworten (klassisches NAT-Traversal für KNXnet/IP-Tunneling).
+      - Knx__Tunneling__UseNat=true
+      - Knx__GroupAddresses__PercentLevel=10/3/0
+      - Knx__GroupAddresses__LitersLevel=10/3/1
+      - Knx__GroupAddresses__WarningBit=10/3/2
+      - Knx__GroupAddresses__FaultBit=10/3/2
+      - Knx__GroupAddresses__RuntimeDays=10/3/1
+      - Knx__WarningThresholdPercent=25
+      - Knx__WarningRecoveryPercent=28
+      - Knx__FaultAfterHours=12
+      - Knx__SendIntervalMinutes=10
+      - Knx__ChangeThresholdPercent=0.5
+
+      - RuntimeEstimation__Enabled=true
+      - RuntimeEstimation__HistoryDays=30
+      - RuntimeEstimation__MinimumSamples=5
+
+volumes:
+  mosquitto-data:
