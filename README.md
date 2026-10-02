@@ -32,6 +32,28 @@ MQTT (Rohwert %) --> Plausibilitätsprüfung --> Median-Glättung (5 Werte)
 | `MqttOilLevelClient` | `src/.../Mqtt/MqttOilLevelClient.cs` | MQTT-Empfang (MQTTnet 5) mit Auto-Reconnect |
 | `FalconKnxGateway` | `src/.../Knx/FalconKnxGateway.cs` | KNX-Schreibzugriff (Knx.Falcon.Sdk 6) |
 
+## Lokale Entwicklung mit .NET Aspire
+
+Für die lokale Entwicklung gibt es zusätzlich zum `docker-compose.yml`
+(gedacht für den Pi/Produktivbetrieb) ein Aspire AppHost, das Mosquitto
+und den Worker gemeinsam mit einem Dashboard (Logs, Traces, Metrics)
+orchestriert:
+
+```bash
+dotnet run --project aspire/NexKnx.OilTankWatcher.AppHost
+```
+
+Startet einen Mosquitto-Container (Port 1883, `ContainerLifetime.Persistent`
+– bleibt zwischen AppHost-Neustarts erhalten) und den Worker als lokalen
+Prozess; `Mqtt__Host`/`Mqtt__Port` werden automatisch auf den Container
+verdrahtet. Alle übrigen Einstellungen (KNX, Tank, …) kommen weiterhin aus
+`appsettings.json`. Die Konsolenausgabe zeigt die Dashboard-URL
+(`https://localhost:17069/login?t=...`).
+
+- `aspire/NexKnx.OilTankWatcher.AppHost` – Orchestrierung (`AppHost.cs`)
+- `aspire/NexKnx.OilTankWatcher.ServiceDefaults` – OpenTelemetry/Health-Checks,
+  vom Worker über `builder.AddServiceDefaults()` eingebunden
+
 ## KNX-Datenpunkte
 
 | Wert | DPT | Standard-GA |

@@ -6,6 +6,8 @@ using NexKnx.OilTankWatcher.Mqtt;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+builder.AddServiceDefaults();
+
 builder.Services.Configure<MqttOptions>(builder.Configuration.GetSection(MqttOptions.SectionName));
 builder.Services.Configure<TankOptions>(builder.Configuration.GetSection(TankOptions.SectionName));
 builder.Services.Configure<KnxOptions>(builder.Configuration.GetSection(KnxOptions.SectionName));

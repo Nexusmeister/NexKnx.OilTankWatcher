@@ -5,4 +5,8 @@
   <Folder Name="/tests/">
     <Project Path="tests/NexKnx.OilTankWatcher.Tests/NexKnx.OilTankWatcher.Tests.csproj" />
   </Folder>
+  <Folder Name="/aspire/">
+    <Project Path="aspire/NexKnx.OilTankWatcher.AppHost/NexKnx.OilTankWatcher.AppHost.csproj" />
+    <Project Path="aspire/NexKnx.OilTankWatcher.ServiceDefaults/NexKnx.OilTankWatcher.ServiceDefaults.csproj" />
+  </Folder>
 </Solution>

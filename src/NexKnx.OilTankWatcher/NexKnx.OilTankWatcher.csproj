@@ -13,4 +13,8 @@
     <PackageReference Include="MQTTnet" Version="5.2.0.1603" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\aspire\NexKnx.OilTankWatcher.ServiceDefaults\NexKnx.OilTankWatcher.ServiceDefaults.csproj" />
+  </ItemGroup>
 </Project>
