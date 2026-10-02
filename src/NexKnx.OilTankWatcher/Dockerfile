@@ -8,9 +8,11 @@ ARG TARGETARCH
 WORKDIR /src
 
 COPY ["src/NexKnx.OilTankWatcher/NexKnx.OilTankWatcher.csproj", "src/NexKnx.OilTankWatcher/"]
+COPY ["aspire/NexKnx.OilTankWatcher.ServiceDefaults/NexKnx.OilTankWatcher.ServiceDefaults.csproj", "aspire/NexKnx.OilTankWatcher.ServiceDefaults/"]
 RUN dotnet restore "src/NexKnx.OilTankWatcher/NexKnx.OilTankWatcher.csproj" -a $TARGETARCH
 
 COPY src/NexKnx.OilTankWatcher/ src/NexKnx.OilTankWatcher/
+COPY aspire/NexKnx.OilTankWatcher.ServiceDefaults/ aspire/NexKnx.OilTankWatcher.ServiceDefaults/
 WORKDIR /src/src/NexKnx.OilTankWatcher
 RUN dotnet publish NexKnx.OilTankWatcher.csproj -c Release -a $TARGETARCH -o /app --self-contained false
 
