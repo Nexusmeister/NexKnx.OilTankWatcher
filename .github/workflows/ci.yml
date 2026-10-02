@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # GHCR-Image-Pfade muessen vollstaendig kleingeschrieben sein.
+  IMAGE_NAME: nexusmeister/nexknx.oiltankwatcher
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v7
+
+      - name: .NET SDK einrichten
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Wiederherstellen
+        run: dotnet restore
+
+      - name: Bauen
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Testen
+        run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Testergebnisse veroeffentlichen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/test-results.trx"
+          retention-days: 7
+
+  docker:
+    name: Docker Image bauen & veroeffentlichen
+    needs: build-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v7
+
+      - name: QEMU einrichten (fuer arm64-Cross-Build)
+        uses: docker/setup-qemu-action@v4
+
+      - name: Buildx einrichten
+        uses: docker/setup-buildx-action@v4
+
+      # Nur bei einem tatsaechlichen Push auf main (= abgeschlossene PR)
+      # bei der GitHub Container Registry anmelden und danach pushen.
+      # Bei Pull Requests wird das Image nur gebaut, nicht veroeffentlicht.
+      - name: Bei GitHub Container Registry anmelden
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Metadaten (Tags/Labels) ermitteln
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Image bauen (und bei main veroeffentlichen)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/NexKnx.OilTankWatcher/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
