@@ -7,6 +7,12 @@ using NexKnx.OilTankWatcher.Persistence;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff ";
+    options.SingleLine = true;
+});
+
 builder.AddServiceDefaults();
 
 builder.Services.Configure<MqttOptions>(builder.Configuration.GetSection(MqttOptions.SectionName));
