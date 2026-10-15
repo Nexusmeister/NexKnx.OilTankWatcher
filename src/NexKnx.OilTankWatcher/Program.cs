@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Extensions.Options;
 using NexKnx.OilTankWatcher;
 using NexKnx.OilTankWatcher.Configuration;
@@ -32,4 +33,13 @@ builder.Services.AddSingleton<IHistoryRepository>(sp =>
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
+
+// Version wird per -p:InformationalVersion (siehe CI-Workflow/Dockerfile)
+// zur Build-/Publish-Zeit aus GitVersion gesetzt; ohne dieses Argument
+// (z. B. lokaler "dotnet run") bleibt das Attribut leer.
+var version = typeof(Worker).Assembly
+    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+host.Services.GetRequiredService<ILogger<Program>>()
+    .LogInformation("NexKnx.OilTankWatcher Version {Version} startet.", version ?? "unbekannt");
+
 host.Run();

@@ -5,6 +5,13 @@
 
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG TARGETARCH
+# Vom CI-Workflow per --build-arg uebergebene, aus der Git-Historie per
+# GitVersion ermittelte SemVer-Version (z. B. "0.1.3"). Das .git-Verzeichnis
+# selbst liegt nicht im Docker-Build-Kontext (.dockerignore), daher kann die
+# Version hier nicht selbst aus Git ermittelt werden, sondern wird fertig
+# durchgereicht. Lokale Builds ohne dieses Argument fallen auf einen
+# erkennbaren Dev-Platzhalter zurueck.
+ARG VERSION=0.0.0-dev
 WORKDIR /src
 
 COPY ["src/NexKnx.OilTankWatcher/NexKnx.OilTankWatcher.csproj", "src/NexKnx.OilTankWatcher/"]
@@ -14,7 +21,8 @@ RUN dotnet restore "src/NexKnx.OilTankWatcher/NexKnx.OilTankWatcher.csproj" -a $
 COPY src/NexKnx.OilTankWatcher/ src/NexKnx.OilTankWatcher/
 COPY aspire/NexKnx.OilTankWatcher.ServiceDefaults/ aspire/NexKnx.OilTankWatcher.ServiceDefaults/
 WORKDIR /src/src/NexKnx.OilTankWatcher
-RUN dotnet publish NexKnx.OilTankWatcher.csproj -c Release -a $TARGETARCH -o /app --self-contained false
+RUN dotnet publish NexKnx.OilTankWatcher.csproj -c Release -a $TARGETARCH -o /app --self-contained false \
+    -p:Version=$VERSION -p:InformationalVersion=$VERSION
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
