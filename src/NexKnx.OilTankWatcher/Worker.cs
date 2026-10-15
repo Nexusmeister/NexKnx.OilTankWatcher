@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using NexKnx.OilTankWatcher.Configuration;
 using NexKnx.OilTankWatcher.Knx;
 using NexKnx.OilTankWatcher.Mqtt;
@@ -35,6 +36,12 @@ public sealed class Worker : BackgroundService
     private double? _currentSmoothedPercent;
     private DateTimeOffset _lastDailySampleAt = DateTimeOffset.MinValue;
 
+    // Fuer Grafana/Prometheus beobachtbar machen - die eigentlichen Bits
+    // gehen sonst nur auf den KNX-Bus und sind von aussen nicht abfragbar.
+    private readonly Meter _meter = new("NexKnx.OilTankWatcher");
+    private int _warningActive;
+    private int _faultActive;
+
     public Worker(
         MqttOilLevelClient mqttClient,
         IKnxGateway knxGateway,
@@ -58,6 +65,15 @@ public sealed class Worker : BackgroundService
         _faultDetector = new FaultDetector(TimeSpan.FromHours(_knxOptions.FaultAfterHours), DateTimeOffset.UtcNow);
         _history = new ReadingHistory(TimeSpan.FromDays(_runtimeOptions.HistoryDays));
         _publishGate = new PublishGate(TimeSpan.FromMinutes(_knxOptions.SendIntervalMinutes), _knxOptions.ChangeThresholdPercent);
+
+        _meter.CreateObservableGauge(
+            "oiltank_warning_active",
+            () => Volatile.Read(ref _warningActive),
+            description: "1 wenn der Warnschwellenwert aktuell unterschritten ist, sonst 0.");
+        _meter.CreateObservableGauge(
+            "oiltank_fault_active",
+            () => Volatile.Read(ref _faultActive),
+            description: "1 wenn aktuell eine Stoerung (zu lange kein gueltiger Messwert) vorliegt, sonst 0.");
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -189,6 +205,7 @@ public sealed class Worker : BackgroundService
 
             var now = DateTimeOffset.UtcNow;
             var fault = _faultDetector.IsFaulty(now);
+            Volatile.Write(ref _faultActive, fault ? 1 : 0);
 
             if (smoothed is null)
             {
@@ -198,6 +215,7 @@ public sealed class Worker : BackgroundService
 
             var percent = smoothed.Value;
             var warning = _warningGate.Update(percent);
+            Volatile.Write(ref _warningActive, warning ? 1 : 0);
 
             if (!_publishGate.ShouldPublish(now, percent, warning, fault))
             {
