@@ -18,20 +18,38 @@ jobs:
   build-test:
     name: Build & Test
     runs-on: ubuntu-latest
+    outputs:
+      semVer: ${{ steps.gitversion.outputs.semVer }}
     steps:
       - name: Code auschecken
         uses: actions/checkout@v7
+        with:
+          # Volle Historie (inkl. Tags) wird von GitVersion benoetigt, um
+          # die Version aus dem letzten Tag + Commit-Abstand zu berechnen.
+          fetch-depth: 0
 
       - name: .NET SDK einrichten
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "10.0.x"
 
+      - name: GitVersion einrichten
+        uses: gittools/actions/gitversion/setup@v4
+        with:
+          versionSpec: "6.x"
+
+      - name: Version aus Git-Historie ermitteln
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4
+
       - name: Wiederherstellen
         run: dotnet restore
 
       - name: Bauen
-        run: dotnet build --configuration Release --no-restore
+        run: >-
+          dotnet build --configuration Release --no-restore
+          -p:Version=${{ steps.gitversion.outputs.semVer }}
+          -p:InformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
 
       - name: Testen
         run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
@@ -78,6 +96,7 @@ jobs:
         with:
           images: ghcr.io/${{ env.IMAGE_NAME }}
           tags: |
+            type=raw,value=${{ needs.build-test.outputs.semVer }}
             type=sha,format=short
             type=raw,value=latest,enable={{is_default_branch}}
 
@@ -90,5 +109,7 @@ jobs:
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ needs.build-test.outputs.semVer }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
