@@ -85,6 +85,14 @@ Konfiguration erfolgt über `appsettings.json` plus Umgebungsvariablen
 (Standard-.NET-Konfiguration, `__` als Trennzeichen für verschachtelte
 Werte, siehe `docker-compose.yml` für ein vollständiges Beispiel).
 
+Die `OTEL_EXPORTER_OTLP_*`-Variablen in `docker-compose.yml` sind
+deployment-spezifisch (Hostnamen/Ports des jeweiligen Grafana-Stacks) und
+daher nicht hart im Repo codiert, sondern werden aus einer lokalen,
+nicht committeten `.env`-Datei im Projektverzeichnis eingelesen (Docker
+Compose liest `.env` automatisch). Siehe `.env.example` für die benötigten
+Variablen. Fehlt die `.env`-Datei oder eine einzelne Variable, bleibt der
+jeweilige OTLP-Export einfach deaktiviert.
+
 Wichtige Einstellungen:
 
 - `Mqtt:Host` / `Mqtt:Port` / `Mqtt:Topic` – Broker und Topic (Standard: `oiltank/main/value`)

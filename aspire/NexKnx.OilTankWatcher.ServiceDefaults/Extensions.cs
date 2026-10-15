@@ -84,6 +84,9 @@ public static class Extensions
 
         if (useOtlpExporter)
         {
+            // Each signal is routed to a different backend via its own
+            // OTEL_EXPORTER_OTLP_{SIGNAL}_ENDPOINT env var (logs -> Loki,
+            // metrics -> Prometheus's OTLP receiver, traces -> Tempo).
             builder.Services.AddOpenTelemetry().UseOtlpExporter();
         }
 

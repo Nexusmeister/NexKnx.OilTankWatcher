@@ -62,6 +62,20 @@ services:
       - RuntimeEstimation__MinimumSamples=5
       - RuntimeEstimation__DatabasePath=/data/history.db
 
+      # Logs/Metrics/Traces per OTLP an den Grafana-Stack senden. Jedes Signal
+      # hat sein eigenes Backend (Logs -> Loki, Metrics -> Prometheus,
+      # Traces -> Tempo). Die tatsaechlichen Hosts/Ports sind
+      # deployment-spezifisch und kommen daher aus der .env-Datei
+      # (siehe .env.example) statt hier im Repo zu stehen. Ist eine Variable
+      # nicht gesetzt, bleibt sie leer und der OTLP-Export wird automatisch
+      # deaktiviert (siehe AddOpenTelemetryExporters in Extensions.cs).
+      - OTEL_SERVICE_NAME=oiltank-watcher
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-}
+      - OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-}
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
+
 volumes:
   mosquitto-data:
   history-data:
