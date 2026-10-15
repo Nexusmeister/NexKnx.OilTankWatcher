@@ -62,19 +62,19 @@ services:
       - RuntimeEstimation__MinimumSamples=5
       - RuntimeEstimation__DatabasePath=/data/history.db
 
-      # Logs/Metrics/Traces per OTLP an den Grafana-Stack auf
-      # 0001-general.fritz.box senden. Jedes Signal hat sein eigenes Backend,
-      # daher wird pro Signal ein eigener Endpoint gesetzt:
-      #   Logs    -> Loki (natives OTLP-Logs-Endpoint)
-      #   Metrics -> Prometheus (OTLP-Receiver muss dort aktiviert sein,
-      #              siehe --web.enable-otlp-receiver)
-      #   Traces  -> Tempo (natives OTLP-HTTP-Endpoint)
+      # Logs/Metrics/Traces per OTLP an den Grafana-Stack senden. Jedes Signal
+      # hat sein eigenes Backend (Logs -> Loki, Metrics -> Prometheus,
+      # Traces -> Tempo). Die tatsaechlichen Hosts/Ports sind
+      # deployment-spezifisch und kommen daher aus der .env-Datei
+      # (siehe .env.example) statt hier im Repo zu stehen. Ist eine Variable
+      # nicht gesetzt, bleibt sie leer und der OTLP-Export wird automatisch
+      # deaktiviert (siehe AddOpenTelemetryExporters in Extensions.cs).
       - OTEL_SERVICE_NAME=oiltank-watcher
       - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://0001-general.fritz.box:4318
-      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://0001-general.fritz.box:3100/otlp/v1/logs
-      - OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://0001-general.fritz.box:9090/api/v1/otlp/v1/metrics
-      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://0001-general.fritz.box:4318/v1/traces
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-}
+      - OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-}
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
 
 volumes:
   mosquitto-data:
