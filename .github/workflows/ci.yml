@@ -18,6 +18,9 @@ jobs:
   build-test:
     name: Build & Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     outputs:
       semVer: ${{ steps.gitversion.outputs.semVer }}
     steps:
@@ -52,7 +55,11 @@ jobs:
           -p:InformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
 
       - name: Testen
-        run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
+        run: >-
+          dotnet test --configuration Release --no-build
+          --logger "trx;LogFileName=test-results.trx"
+          --collect:"XPlat Code Coverage"
+          --results-directory ./coverage
 
       - name: Testergebnisse veroeffentlichen
         if: always()
@@ -60,6 +67,34 @@ jobs:
         with:
           name: test-results
           path: "**/test-results.trx"
+          retention-days: 7
+
+      - name: Testergebnisse in Job-Summary anzeigen
+        if: always()
+        uses: dorny/test-reporter@v2
+        with:
+          name: Testergebnisse
+          path: "**/test-results.trx"
+          reporter: dotnet-trx
+
+      - name: Code-Coverage-Bericht erzeugen
+        if: always()
+        uses: danielpalme/ReportGenerator-GitHub-Action@5
+        with:
+          reports: "coverage/**/coverage.cobertura.xml"
+          targetdir: "coverage-report"
+          reporttypes: "MarkdownSummaryGithub;Html"
+
+      - name: Code Coverage in Job-Summary veroeffentlichen
+        if: always()
+        run: cat coverage-report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Code-Coverage-Bericht veroeffentlichen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-report
           retention-days: 7
 
   docker:
