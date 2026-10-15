@@ -74,6 +74,29 @@ public sealed class Worker : BackgroundService
             "oiltank_fault_active",
             () => Volatile.Read(ref _faultActive),
             description: "1 wenn aktuell eine Stoerung (zu lange kein gueltiger Messwert) vorliegt, sonst 0.");
+        _meter.CreateObservableGauge(
+            "oiltank_level_percent",
+            GetCurrentSmoothedPercentMeasurements,
+            unit: "%",
+            description: "Aktueller gefilterter/geglätteter Füllstand in Prozent.");
+    }
+
+    private IEnumerable<Measurement<double>> GetCurrentSmoothedPercentMeasurements()
+    {
+        double? smoothed;
+        lock (_stateLock)
+        {
+            smoothed = _currentSmoothedPercent;
+        }
+
+        // Noch kein gueltiger Messwert seit Start des Dienstes - keine Messung
+        // melden statt einen irrefuehrenden 0%-Wert.
+        if (smoothed is null)
+        {
+            yield break;
+        }
+
+        yield return new Measurement<double>(smoothed.Value);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
