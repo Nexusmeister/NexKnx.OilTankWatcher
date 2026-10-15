@@ -62,11 +62,19 @@ services:
       - RuntimeEstimation__MinimumSamples=5
       - RuntimeEstimation__DatabasePath=/data/history.db
 
-      # Logs an Loki exportieren (Grafana-Stack auf 0001-general.fritz.box)
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://0001-general.fritz.box:3100
-      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
-      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://0001-general.fritz.box:3100/otlp/v1/logs
+      # Logs/Metrics/Traces per OTLP an den Grafana-Stack auf
+      # 0001-general.fritz.box senden. Jedes Signal hat sein eigenes Backend,
+      # daher wird pro Signal ein eigener Endpoint gesetzt:
+      #   Logs    -> Loki (natives OTLP-Logs-Endpoint)
+      #   Metrics -> Prometheus (OTLP-Receiver muss dort aktiviert sein,
+      #              siehe --web.enable-otlp-receiver)
+      #   Traces  -> Tempo (natives OTLP-HTTP-Endpoint)
       - OTEL_SERVICE_NAME=oiltank-watcher
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://0001-general.fritz.box:4318
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://0001-general.fritz.box:3100/otlp/v1/logs
+      - OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://0001-general.fritz.box:9090/api/v1/otlp/v1/metrics
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://0001-general.fritz.box:4318/v1/traces
 
 volumes:
   mosquitto-data:
