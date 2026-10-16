@@ -5,6 +5,7 @@ using Knx.Falcon.Configuration;
 using Knx.Falcon.Sdk;
 using Microsoft.Extensions.Logging;
 using NexKnx.OilTankWatcher.Configuration;
+using NexKnx.OilTankWatcher.Logging;
 
 namespace NexKnx.OilTankWatcher.Knx;
 
@@ -61,8 +62,7 @@ public sealed class FalconKnxGateway : IKnxGateway
         connectorParameters.AutoReconnect = true;
 
         _bus = new KnxBus(connectorParameters);
-        _bus.ConnectionStateChanged += (_, _) =>
-            _logger.LogInformation("KNX-Verbindungsstatus: {State}", _bus.ConnectionState);
+        _bus.ConnectionStateChanged += (_, _) => _logger.LogKnxConnectionStateChanged(_bus.ConnectionState);
     }
 
     private static ConnectorParameters BuildConnectorParameters(KnxOptions options) => options.ConnectionType switch
@@ -81,10 +81,7 @@ public sealed class FalconKnxGateway : IKnxGateway
     public async Task ConnectAsync(CancellationToken cancellationToken)
     {
         await _bus.ConnectAsync(cancellationToken);
-        _logger.LogInformation(
-            "KNX-Bus verbunden ({ConnectionType}), Status: {State}.",
-            _options.ConnectionType,
-            _bus.ConnectionState);
+        _logger.LogKnxConnected(_options.ConnectionType, _bus.ConnectionState);
     }
 
     public Task WritePercentAsync(double percent, CancellationToken cancellationToken) =>

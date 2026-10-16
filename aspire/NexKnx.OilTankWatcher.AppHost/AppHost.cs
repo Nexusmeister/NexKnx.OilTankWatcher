@@ -14,4 +14,4 @@ builder.AddProject<Projects.NexKnx_OilTankWatcher>("oiltank-watcher")
     .WithEnvironment("Mqtt__Port", mqttEndpoint.Property(EndpointProperty.TargetPort))
     .WaitFor(mosquitto);
 
-builder.Build().Run();
+await builder.Build().RunAsync();

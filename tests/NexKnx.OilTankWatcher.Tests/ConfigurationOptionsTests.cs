@@ -28,7 +28,7 @@ public class KnxTunnelingOptionsTests
     {
         var options = new KnxTunnelingOptions();
 
-        options.Host.ShouldBe("192.168.178.21");
+        options.Host.ShouldBe(string.Empty);
         options.Port.ShouldBe(3671);
         options.UseNat.ShouldBeFalse();
     }

@@ -33,14 +33,20 @@ public sealed class KnxOptions
 
 public sealed class KnxTunnelingOptions
 {
-    public string Host { get; set; } = "192.168.178.21";
+    // Kein Default: die IP der KNX/IP-Schnittstelle ist umgebungsspezifisch
+    // und wird ausschliesslich ueber appsettings.json bzw. Knx__Tunneling__Host
+    // (siehe README) gesetzt.
+    public string Host { get; set; } = string.Empty;
     public int Port { get; set; } = 3671;
     public bool UseNat { get; set; } = false;
 }
 
 public sealed class KnxRoutingOptions
 {
-    public string MulticastAddress { get; set; } = "224.0.23.12";
+    // NOSONAR (S1313): offizielle, von der KNX-Spezifikation fest
+    // vorgegebene Multicast-Adresse fuer KNXnet/IP-Routing - kein
+    // umgebungsspezifischer Wert.
+    public string MulticastAddress { get; set; } = "224.0.23.12"; // NOSONAR
 }
 
 public sealed class KnxGroupAddressOptions

@@ -1,6 +1,7 @@
 using System.Diagnostics.Metrics;
 using NexKnx.OilTankWatcher.Configuration;
 using NexKnx.OilTankWatcher.Knx;
+using NexKnx.OilTankWatcher.Logging;
 using NexKnx.OilTankWatcher.Mqtt;
 using NexKnx.OilTankWatcher.Persistence;
 using NexKnx.OilTankWatcher.Processing;
@@ -165,7 +166,7 @@ public sealed class Worker : BackgroundService
                 _lastDailySampleAt = persisted[^1].Timestamp;
             }
 
-            _logger.LogInformation("{Count} persistierte Historienwerte geladen.", persisted.Count);
+            _logger.LogHistoryLoaded(persisted.Count);
         }
         catch (Exception ex)
         {
@@ -263,12 +264,7 @@ public sealed class Worker : BackgroundService
 
             _publishGate.MarkSent(now, percent, warning, fault);
 
-            _logger.LogInformation(
-                "KNX aktualisiert: {Percent:0.0}% ({Liters:0} l), Warnung={Warning}, Störung={Fault}.",
-                percent,
-                liters,
-                warning,
-                fault);
+            _logger.LogKnxUpdated(percent, liters, warning, fault);
         }
         catch (Exception ex)
         {

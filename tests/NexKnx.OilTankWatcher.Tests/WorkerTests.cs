@@ -61,7 +61,13 @@ file sealed class KnxGatewayHarness
             });
         Gateway.WriteRuntimeDaysAsync(Arg.Do<double>(d => RuntimeDaysWrites.Add(d)), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
+
+        // CA2012: NSubstitute-Konfigurationsaufruf, kein tatsaechlicher
+        // ValueTask-Verbrauch - der Aufruf wird von NSubstitute abgefangen,
+        // nicht wirklich ausgefuehrt.
+#pragma warning disable CA2012
         Gateway.DisposeAsync().Returns(ValueTask.CompletedTask);
+#pragma warning restore CA2012
     }
 
     public void ResetFaultSignal() => FaultWritten = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -76,6 +82,7 @@ file sealed class HistoryRepositoryHarness
     public HistoryRepositoryHarness(
         Exception? initializeException = null,
         Exception? loadRecentException = null,
+        Exception? appendException = null,
         IReadOnlyList<LevelSample>? seededSamples = null)
     {
         Repository = Substitute.For<IHistoryRepository>();
@@ -101,10 +108,22 @@ file sealed class HistoryRepositoryHarness
         });
 
         Repository.AppendAsync(Arg.Do<LevelSample>(s => AppendedSamples.Add(s)), Arg.Any<CancellationToken>())
-            .Returns(Task.CompletedTask);
+            .Returns(_ =>
+            {
+                if (appendException is not null)
+                {
+                    throw appendException;
+                }
+
+                return Task.CompletedTask;
+            });
         Repository.PruneAsync(Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
+
+        // CA2012: NSubstitute-Konfigurationsaufruf, siehe KnxGatewayHarness oben.
+#pragma warning disable CA2012
         Repository.DisposeAsync().Returns(ValueTask.CompletedTask);
+#pragma warning restore CA2012
     }
 }
 
@@ -142,7 +161,11 @@ public sealed class WorkerTests
     {
         var mqtt = Substitute.For<IMqttOilLevelClient>();
         mqtt.StartAsync(Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        // CA2012: NSubstitute-Konfigurationsaufruf, siehe KnxGatewayHarness oben.
+#pragma warning disable CA2012
         mqtt.DisposeAsync().Returns(ValueTask.CompletedTask);
+#pragma warning restore CA2012
         return mqtt;
     }
 
@@ -367,5 +390,105 @@ public sealed class WorkerTests
         await Task.Delay(TimeSpan.FromMilliseconds(500));
 
         knx.PercentWrites.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task RuntimeEstimationEnabled_WithEnoughSamples_WritesRuntimeDays()
+    {
+        var mqtt = CreateMqttSubstitute();
+        var knx = new KnxGatewayHarness();
+        var now = DateTimeOffset.UtcNow;
+        var history = new HistoryRepositoryHarness(
+            // Fallender Verlauf mit genügend Punkten (MinimumSamples = 3), damit
+            // RuntimeEstimator eine negative Steigung und somit eine Schätzung
+            // liefert - das Gegenstück zu RuntimeEstimationDisabled_...
+            seededSamples:
+            [
+                new LevelSample(now.AddDays(-2), 80),
+                new LevelSample(now.AddDays(-1), 70),
+                new LevelSample(now, 60),
+            ]);
+        var worker = CreateWorker(mqtt, knx.Gateway, history.Repository);
+
+        await worker.StartAsync(CancellationToken.None);
+        await WaitUntilMqttStartedAsync(mqtt);
+
+        RaiseValue(mqtt, 50);
+        (await WaitForSignalAsync(knx.FaultWritten)).ShouldBeTrue();
+
+        knx.RuntimeDaysWrites.ShouldHaveSingleItem();
+
+        await worker.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task NoSignificantChange_WithinSendInterval_SkipsSecondPublish()
+    {
+        var mqtt = CreateMqttSubstitute();
+        var knx = new KnxGatewayHarness();
+        var history = new HistoryRepositoryHarness();
+        var worker = CreateWorker(mqtt, knx.Gateway, history.Repository);
+
+        await worker.StartAsync(CancellationToken.None);
+        await WaitUntilMqttStartedAsync(mqtt);
+
+        RaiseValue(mqtt, 60);
+        (await WaitForSignalAsync(knx.FaultWritten)).ShouldBeTrue();
+        knx.ResetFaultSignal();
+
+        // Unveränderter Wert innerhalb des Sendeintervalls - PublishGate.ShouldPublish
+        // muss hier false liefern, es darf kein zweiter Schreibvorgang erfolgen.
+        RaiseValue(mqtt, 60);
+        await Task.Delay(TimeSpan.FromMilliseconds(500));
+
+        knx.PercentWrites.ShouldHaveSingleItem();
+
+        await worker.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task PersistSample_RepositoryAppendThrows_DoesNotCrash()
+    {
+        var mqtt = CreateMqttSubstitute();
+        var knx = new KnxGatewayHarness();
+        var history = new HistoryRepositoryHarness(
+            appendException: new InvalidOperationException("Schreibfehler in SQLite."));
+        var worker = CreateWorker(mqtt, knx.Gateway, history.Repository);
+
+        await worker.StartAsync(CancellationToken.None);
+        await WaitUntilMqttStartedAsync(mqtt);
+
+        // Erster Wert löst - da _lastDailySampleAt initial MinValue ist - immer
+        // einen (hier fehlschlagenden) Persistiervorgang aus.
+        RaiseValue(mqtt, 60);
+        (await WaitForSignalAsync(knx.FaultWritten)).ShouldBeTrue();
+        await Task.Delay(TimeSpan.FromMilliseconds(100));
+
+        await worker.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task EvaluateAndPublish_KnxWriteThrows_IsSwallowed_ServiceKeepsRunning()
+    {
+        var mqtt = CreateMqttSubstitute();
+        var knx = new KnxGatewayHarness();
+        var history = new HistoryRepositoryHarness();
+        var worker = CreateWorker(mqtt, knx.Gateway, history.Repository);
+
+        knx.Gateway.WritePercentAsync(Arg.Any<double>(), Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromException(new InvalidOperationException("KNX-Schreibfehler.")));
+
+        await worker.StartAsync(CancellationToken.None);
+        await WaitUntilMqttStartedAsync(mqtt);
+
+        RaiseValue(mqtt, 60);
+        await Task.Delay(TimeSpan.FromMilliseconds(500));
+
+        // Kein FaultWritten-Signal, da WriteFaultAsync wegen der Exception bei
+        // WritePercentAsync gar nicht mehr erreicht wird - entscheidend ist,
+        // dass der Fehler abgefangen wurde und der Dienst weiterläuft.
+        knx.FaultWrites.ShouldBeEmpty();
+
+        await worker.StopAsync(CancellationToken.None);
     }
 }
