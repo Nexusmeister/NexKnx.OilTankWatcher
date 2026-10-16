@@ -176,11 +176,16 @@ jobs:
         # SONAR_TOKEN wird vom Scanner automatisch aus der Umgebungsvariable
         # gelesen - bewusst nicht per ${{ secrets.SONAR_TOKEN }} in das
         # run-Skript expandiert (siehe GitHub-Issue #24, Sonar-Regel S7636).
+        # sonar.coverage.exclusions spiegelt dieselben, bereits in
+        # coverlet.runsettings begruendeten Ausnahmen (Issue #10) - ohne diese
+        # zaehlt SonarCloud nicht lokal getestete Dateien sonst als 0% statt
+        # sie aus der Berechnung auszunehmen.
         run: >-
           dotnet-sonarscanner begin
           /k:"Nexusmeister_NexKnx.OilTankWatcher"
           /o:"nexusmeister"
           /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+          /d:sonar.coverage.exclusions="src/NexKnx.OilTankWatcher/Program.cs,src/NexKnx.OilTankWatcher/Knx/FalconKnxGateway.cs,aspire/NexKnx.OilTankWatcher.AppHost/AppHost.cs,aspire/NexKnx.OilTankWatcher.ServiceDefaults/Extensions.cs"
 
       - name: Wiederherstellen
         run: dotnet restore

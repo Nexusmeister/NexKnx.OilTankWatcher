@@ -228,4 +228,70 @@ public class MqttOilLevelClientTests
         harness.DisconnectCalls.ShouldBe(0);
         harness.Client.Received(1).Dispose();
     }
+
+    [Fact]
+    public void Constructor_WithRealMqttClientFactory_DoesNotThrow()
+    {
+        // Deckt den öffentlichen, von der DI verwendeten Konstruktor ab, der
+        // einen echten MQTTnet-Client per MqttClientFactory erzeugt - dabei
+        // wird noch keine Netzwerkverbindung aufgebaut (erst StartAsync tut das).
+        Should.NotThrow(() => new MqttOilLevelClient(CreateOptions(), NullLogger<MqttOilLevelClient>.Instance));
+    }
+
+    [Fact]
+    public async Task StartAsync_WithCredentials_ConnectsSuccessfully()
+    {
+        var options = CreateOptions();
+        options.Username = "user";
+        options.Password = "pass";
+        var harness = new MqttClientHarness();
+        var client = new MqttOilLevelClient(options, NullLogger<MqttOilLevelClient>.Instance, harness.Client);
+
+        await client.StartAsync(CancellationToken.None);
+
+        harness.ConnectCalls.ShouldBe(1);
+        harness.SubscribeCalls.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task StartAsync_CancelledDuringConnectAttempt_StopsRetryLoop()
+    {
+        var harness = new MqttClientHarness();
+        using var cts = new CancellationTokenSource();
+
+        // Simuliert eine Abbruchanforderung, die genau während eines laufenden
+        // ConnectAsync-Aufrufs eintrifft: der Token ist zum Zeitpunkt des Catch
+        // bereits abgebrochen, wodurch nicht die allgemeine Fehlerbehandlung
+        // (Backoff/Retry) greift, sondern der eigene OperationCanceledException-
+        // Catch-Block.
+        Func<NSubstitute.Core.CallInfo, Task<MqttClientConnectResult>> cancelDuringConnect = _ =>
+        {
+            cts.Cancel();
+            throw new OperationCanceledException(cts.Token);
+        };
+        harness.Client.ConnectAsync(Arg.Any<MqttClientOptions>(), Arg.Any<CancellationToken>())
+            .Returns(cancelDuringConnect);
+        var client = new MqttOilLevelClient(CreateOptions(), NullLogger<MqttOilLevelClient>.Instance, harness.Client);
+
+        await client.StartAsync(cts.Token);
+
+        harness.SubscribeCalls.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task Disconnected_AfterCancellation_DoesNotTriggerReconnect()
+    {
+        var harness = new MqttClientHarness();
+        var client = new MqttOilLevelClient(CreateOptions(), NullLogger<MqttOilLevelClient>.Instance, harness.Client);
+        using var cts = new CancellationTokenSource();
+
+        await client.StartAsync(cts.Token);
+        harness.ConnectCalls.ShouldBe(1);
+        cts.Cancel();
+
+        harness.RaiseDisconnected();
+        await Task.Delay(TimeSpan.FromMilliseconds(200));
+
+        harness.ConnectCalls.ShouldBe(1);
+    }
 }
