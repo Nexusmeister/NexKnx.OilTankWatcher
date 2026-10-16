@@ -128,16 +128,17 @@ Important settings:
    docker compose logs -f oiltank-watcher
    ```
 
-   On successful processing a line like this appears:
-   `KNX updated: 67.3% (6125 l), raw reading=67.3%, warning=False, fault=False.`
+   On successful processing, two lines like these appear:
+   `Raw reading received: 67.3%.`
+   `KNX updated: 67.3% (6125 l), warning=False, fault=False.`
 
-   Note the `Percent` written to KNX is the *median-smoothed* value (see
+   The first line is logged immediately for every accepted MQTT message.
+   The `Percent` in the second line is the *median-smoothed* value (see
    `Tank:MedianWindowSize`), not necessarily the raw value just published -
-   the log line's `raw reading` always shows what was actually received on
-   MQTT. A single manual test publish only fully replaces the smoothed
-   value once `MedianWindowSize` consecutive readings with that value have
-   been received; publish the same test value a few times in a row to see
-   it propagate through immediately.
+   a single manual test publish only fully replaces the smoothed value
+   once `MedianWindowSize` consecutive readings with that value have been
+   received; publish the same test value a few times in a row to see it
+   propagate through immediately.
 
 5. Use the ETS group monitor (bus monitor) to check whether the values
    arrive on the test GA (DPT 5.001 for %, DPT 12.1200 for liters, DPT 9.xxx
