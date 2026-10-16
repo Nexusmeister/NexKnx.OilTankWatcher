@@ -28,9 +28,9 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<KnxOptions>>(
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<RuntimeEstimationOptions>>().Value);
 
 builder.Services.AddSingleton<MqttOilLevelClient>();
-// Muss dieselbe Singleton-Instanz wie MqttOilLevelClient liefern (nicht per
-// AddSingleton<IMqttOilLevelClient, MqttOilLevelClient>() neu auflösen) - sonst
-// entstünde eine zweite Instanz mit einer zweiten MQTT-Verbindung.
+// Must resolve to the same singleton instance as MqttOilLevelClient (not
+// re-resolved via AddSingleton<IMqttOilLevelClient, MqttOilLevelClient>()) -
+// otherwise a second instance with a second MQTT connection would result.
 builder.Services.AddSingleton<IMqttOilLevelClient>(sp => sp.GetRequiredService<MqttOilLevelClient>());
 builder.Services.AddSingleton<IKnxGateway, FalconKnxGateway>();
 builder.Services.AddSingleton<IHistoryRepository>(sp =>
@@ -39,11 +39,11 @@ builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
 
-// Version wird per -p:InformationalVersion (siehe CI-Workflow/Dockerfile)
-// zur Build-/Publish-Zeit aus GitVersion gesetzt; ohne dieses Argument
-// (z. B. lokaler "dotnet run") bleibt das Attribut leer.
+// Version is set from GitVersion at build/publish time via
+// -p:InformationalVersion (see CI workflow/Dockerfile); without this
+// argument (e.g. a local "dotnet run") the attribute stays empty.
 var version = typeof(Worker).Assembly
     .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-host.Services.GetRequiredService<ILogger<Program>>().LogStartup(version ?? "unbekannt");
+host.Services.GetRequiredService<ILogger<Program>>().LogStartup(version ?? "unknown");
 
 await host.RunAsync();

@@ -5,18 +5,16 @@ using NexKnx.OilTankWatcher.Processing;
 namespace NexKnx.OilTankWatcher.Persistence;
 
 /// <summary>
-/// Persistiert die Füllstandshistorie (für die Restreichweitenschätzung)
-/// in einer lokalen SQLite-Datenbank, damit sie einen Neustart des Dienstes
-/// überlebt. Eine einzige, langlebige Verbindung wird für die Lebensdauer
-/// des Repositorys offen gehalten (Standardmuster für SQLite in einem
-/// Single-Writer-Prozess).
+/// Persists the fill-level history (for the remaining runtime estimation)
+/// in a local SQLite database, so it survives a restart of the service. A
+/// single, long-lived connection is kept open for the lifetime of the
+/// repository (standard pattern for SQLite in a single-writer process).
 ///
-/// API-Stand gegen die tatsächlich installierte Paketversion
-/// (Microsoft.Data.Sqlite 10.0.12) funktional verifiziert, nicht aus dem
-/// Gedächtnis übernommen: Verbindungsaufbau, Retention-Filterung via
-/// WHERE-Parameter, "INSERT OR REPLACE" (Ersetzen statt Duplizieren bei
-/// gleichem Zeitstempel) und Prune-Löschung wurden gegen eine echte
-/// In-Memory-SQLite-Datenbank durchgespielt.
+/// API shape functionally verified against the actually installed package
+/// version (Microsoft.Data.Sqlite 10.0.12), not taken from memory:
+/// connection setup, retention filtering via WHERE parameters, "INSERT OR
+/// REPLACE" (replacing instead of duplicating on the same timestamp), and
+/// prune deletion were exercised against a real in-memory SQLite database.
 /// </summary>
 public sealed class SqliteHistoryRepository : IHistoryRepository
 {

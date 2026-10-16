@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Code-Coverage-Ausschlüsse für coverlet (via "XPlat Code Coverage"), siehe
-  GitHub-Issue #10. Jede Ausnahme wird einzeln begründet, damit nachvollziehbar
-  bleibt, warum sie nicht zur 80%-Zielabdeckung beitragen muss:
+  Code coverage exclusions for coverlet (via "XPlat Code Coverage"), see
+  GitHub issue #10. Each exception is justified individually, so it stays
+  traceable why it doesn't have to contribute to the 80% target coverage:
 
-  - NexKnx.OilTankWatcher.Knx.FalconKnxGateway: dünner Adapter direkt über den
-    sealed, nicht mockbaren Knx.Falcon.Sdk.KnxBus; es gibt keine innere
-    Testnaht ohne echte/physische KNX-Hardware - manuell bzw. per
-    Integrationstest gegen reale Hardware verifiziert.
-  - Program (Komposition-Root): Top-Level-Statements ohne Verzweigungslogik,
-    die isoliert betrachtet einen Unit-Test rechtfertigen würde.
+  - NexKnx.OilTankWatcher.Knx.FalconKnxGateway: thin adapter directly over
+    the sealed, non-mockable Knx.Falcon.Sdk.KnxBus; there is no inner test
+    seam without real/physical KNX hardware - verified manually and via an
+    integration test against real hardware.
+  - Program (composition root): top-level statements without branching
+    logic that, viewed in isolation, would justify a unit test.
   - NexKnx.OilTankWatcher.ServiceDefaults.Microsoft.Extensions.Hosting.Extensions:
-    unveränderte Standard-.NET-Aspire-ServiceDefaults-Vorlage
-    (OTel-/Health-Check-Verdrahtung).
-  - **/obj/**/*.cs, **/*.g.cs, **/AssemblyInfo.cs: generierter bzw. nicht
-    selbst verfasster Code.
+    unchanged standard .NET Aspire ServiceDefaults template (OTel/health
+    check wiring).
+  - **/obj/**/*.cs, **/*.g.cs, **/AssemblyInfo.cs: generated or not
+    self-authored code.
 -->
 <RunSettings>
   <DataCollectionRunSettings>
     <DataCollectors>
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
-          <!-- opencover zusaetzlich zu cobertura, siehe GitHub-Issue #20:
-               SonarCloud liest fuer C# nur opencover/dotCover/VS-Coverage,
-               kein cobertura (das ReportGenerator weiterhin nutzt). -->
+          <!-- opencover in addition to cobertura, see GitHub issue #20:
+               SonarCloud only reads opencover/dotCover/VS-Coverage for C#,
+               not cobertura (which ReportGenerator still uses). -->
           <Format>cobertura,opencover</Format>
           <Exclude>
             [NexKnx.OilTankWatcher]NexKnx.OilTankWatcher.Knx.FalconKnxGateway,[NexKnx.OilTankWatcher]Program,[NexKnx.OilTankWatcher.ServiceDefaults]Microsoft.Extensions.Hosting.Extensions

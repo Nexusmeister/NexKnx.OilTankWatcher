@@ -10,25 +10,26 @@ using NexKnx.OilTankWatcher.Logging;
 namespace NexKnx.OilTankWatcher.Knx;
 
 /// <summary>
-/// KNX-Anbindung über das Falcon SDK (Knx.Falcon.Sdk 6.x).
+/// KNX integration via the Falcon SDK (Knx.Falcon.Sdk 6.x).
 ///
-/// API-Stand gegen die tatsächlich installierte Paketversion verifiziert
-/// (per Reflection), nicht aus dem Gedächtnis übernommen:
+/// API shape verified against the actually installed package version (by
+/// reflection), not taken from memory:
 ///   - Knx.Falcon.Sdk.KnxBus(ConnectorParameters) + ConnectAsync/WriteGroupValueAsync
 ///   - Knx.Falcon.Configuration.IpTunnelingConnectorParameters /
-///     IpRoutingConnectorParameters, inkl. ConnectorParameters.AutoReconnect
+///     IpRoutingConnectorParameters, including ConnectorParameters.AutoReconnect
 ///   - Knx.Falcon.ApplicationData.DatapointTypes: DptFactory.Default.Get(5,1)
-///     liefert die DPT_Scaling-Implementierung für DPT 5.001 (Prozent 0..100%,
-///     Rundtrip-getestet: 42% -> Byte 107); DptFactory.Default.Get(12,1200)
-///     liefert "DPT_VolumeLiquid_Litre" (Liter, 4-Byte-Ganzzahl, Rundtrip-
-///     getestet: 6688 L -> exakt 6688 L zurück, ohne die Rundungsungenauigkeit,
-///     die ein 2-Byte-Gleitkomma-DPT 9.xxx bei Werten in dieser Größenordnung
-///     hätte); Dpt9 für die (fraktionale) Restreichweite in Tagen und Dpt1 für
-///     Warn- und Störungsbit (DPT 1.005 "Alarm").
-///     Hinweis: Alle DPT-1.x- bzw. DPT-12.x-Subtypen sind auf dem Draht
-///     dieselbe 1-Bit- bzw. 4-Byte-Ganzzahl-Kodierung - die Subtyp-Nummer ist
-///     reine ETS-Projektmetadaten (Anzeige/Interpretation der Gruppenadresse)
-///     und wird nicht mitübertragen.
+///     returns the DPT_Scaling implementation for DPT 5.001 (percent 0..100%,
+///     round-trip tested: 42% -> byte 107); DptFactory.Default.Get(12,1200)
+///     returns "DPT_VolumeLiquid_Litre" (liters, 4-byte integer, round-trip
+///     tested: 6688 L -> exactly 6688 L back, without the rounding
+///     inaccuracy that a 2-byte floating-point DPT 9.xxx would have at
+///     values of this magnitude); Dpt9 for the (fractional) remaining
+///     runtime in days and Dpt1 for the warning and fault bit (DPT 1.005
+///     "Alarm").
+///     Note: all DPT-1.x and DPT-12.x subtypes have the same 1-bit or
+///     4-byte integer encoding on the wire - the subtype number is pure ETS
+///     project metadata (display/interpretation of the group address) and
+///     is not transmitted along with it.
 /// </summary>
 public sealed class FalconKnxGateway : IKnxGateway
 {
@@ -38,8 +39,8 @@ public sealed class FalconKnxGateway : IKnxGateway
 
     private readonly DptBase _percentDpt = DptFactory.Default.Get(5, 1); // DPT 5.001 "Scaling"
     private readonly DptBase _volumeDpt = DptFactory.Default.Get(12, 1200); // DPT 12.1200 "VolumeLiquid_Litre"
-    private readonly Dpt9 _runtimeDpt = new(); // DPT 9.xxx (fraktionale Restreichweite in Tagen)
-    private readonly Dpt1 _alarmDpt = new(); // DPT 1.005 "Alarm" (Warn- und Störungsbit)
+    private readonly Dpt9 _runtimeDpt = new(); // DPT 9.xxx (fractional remaining runtime in days)
+    private readonly Dpt1 _alarmDpt = new(); // DPT 1.005 "Alarm" (warning and fault bit)
 
     private readonly GroupAddress _percentGa;
     private readonly GroupAddress _litersGa;
@@ -75,7 +76,7 @@ public sealed class FalconKnxGateway : IKnxGateway
         KnxConnectionType.Routing => new IpRoutingConnectorParameters(
             IPAddress.Parse(options.Routing.MulticastAddress)),
 
-        _ => throw new NotSupportedException($"Unbekannter KNX-Verbindungstyp: {options.ConnectionType}")
+        _ => throw new NotSupportedException($"Unknown KNX connection type: {options.ConnectionType}")
     };
 
     public async Task ConnectAsync(CancellationToken cancellationToken)
@@ -107,7 +108,7 @@ public sealed class FalconKnxGateway : IKnxGateway
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "KNX-Schreibvorgang auf Gruppenadresse {Address} fehlgeschlagen.", address);
+            _logger.LogWarning(ex, "KNX write to group address {Address} failed.", address);
         }
     }
 

@@ -25,7 +25,7 @@ public class MedianSmootherTests
         smoother.Add(80);
         var result = smoother.Add(30);
 
-        // Fenster: 10, 90, 20, 80, 30 -> sortiert: 10, 20, 30, 80, 90 -> Median 30
+        // Window: 10, 90, 20, 80, 30 -> sorted: 10, 20, 30, 80, 90 -> median 30
         result.ShouldBe(30);
     }
 
@@ -38,9 +38,9 @@ public class MedianSmootherTests
         smoother.Add(51);
         smoother.Add(49);
         smoother.Add(50);
-        var result = smoother.Add(500); // Ausreißer, der die Plausibilitätsprüfung z. B. im Grenzfall passiert hat
+        var result = smoother.Add(500); // Outlier that passed the plausibility check, e.g. in an edge case
 
-        // Fenster: 50, 51, 49, 50, 500 -> sortiert: 49, 50, 50, 51, 500 -> Median 50
+        // Window: 50, 51, 49, 50, 500 -> sorted: 49, 50, 50, 51, 500 -> median 50
         result.ShouldBe(50);
     }
 
@@ -51,8 +51,8 @@ public class MedianSmootherTests
 
         smoother.Add(10);
         smoother.Add(20);
-        smoother.Add(30); // Fenster: 10,20,30 -> Median 20
-        var result = smoother.Add(100); // Fenster: 20,30,100 -> Median 30 (10 ist herausgefallen)
+        smoother.Add(30); // Window: 10,20,30 -> median 20
+        var result = smoother.Add(100); // Window: 20,30,100 -> median 30 (10 has dropped out)
 
         result.ShouldBe(30);
     }
@@ -67,7 +67,7 @@ public class MedianSmootherTests
         smoother.Add(30);
         var result = smoother.Add(40);
 
-        // sortiert: 10,20,30,40 -> Median (20+30)/2 = 25
+        // sorted: 10,20,30,40 -> median (20+30)/2 = 25
         result.ShouldBe(25);
     }
 

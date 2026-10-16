@@ -19,11 +19,11 @@ services:
       - mosquitto
     volumes:
       - history-data:/data
-    # KNX IP-Routing nutzt Multicast (224.0.23.12) und benötigt auf dem Pi in
-    # der Regel den Host-Netzwerkmodus, da Docker-Bridge-Netzwerke Multicast
-    # standardmäßig nicht durchleiten. Für IP-Tunneling (Standard) reicht das
-    # normale Bridge-Netzwerk, solange die KNX/IP-Schnittstelle vom Container
-    # aus erreichbar ist.
+    # KNX IP routing uses multicast (224.0.23.12) and usually requires the
+    # host network mode on the Pi, since Docker bridge networks don't
+    # forward multicast by default. For IP tunneling (default) the normal
+    # bridge network is sufficient, as long as the KNX/IP interface is
+    # reachable from the container.
     # network_mode: host
     environment:
       # MQTT
@@ -36,15 +36,15 @@ services:
       - Tank__MaxStepPercent=5
       - Tank__MedianWindowSize=5
 
-      # KNX - zuerst unbedingt mit einer freien Test-Gruppenadresse
-      # betreiben (siehe README), bevor echte GAs eingetragen werden!
+      # KNX - make sure to run with a free test group address first (see
+      # README), before entering real GAs!
       - Knx__ConnectionType=Tunneling
       - Knx__Tunneling__Host=192.168.178.21
       - Knx__Tunneling__Port=3671
-      # true, da der Container im Docker-Bridge-Netz eine private Adresse an
-      # das KNX-Interface meldet, die vom LAN aus nicht erreichbar ist - das
-      # KNX-Interface muss stattdessen an die beobachtete Absenderadresse
-      # antworten (klassisches NAT-Traversal für KNXnet/IP-Tunneling).
+      # true, because the container on the Docker bridge network reports a
+      # private address to the KNX interface that isn't reachable from the
+      # LAN - the KNX interface must instead reply to the observed sender
+      # address (classic NAT traversal for KNXnet/IP tunneling).
       - Knx__Tunneling__UseNat=true
       - Knx__GroupAddresses__PercentLevel=10/3/0
       - Knx__GroupAddresses__LitersLevel=10/3/1
@@ -62,13 +62,13 @@ services:
       - RuntimeEstimation__MinimumSamples=5
       - RuntimeEstimation__DatabasePath=/data/history.db
 
-      # Logs/Metrics/Traces per OTLP an den Grafana-Stack senden. Jedes Signal
-      # hat sein eigenes Backend (Logs -> Loki, Metrics -> Prometheus,
-      # Traces -> Tempo). Die tatsaechlichen Hosts/Ports sind
-      # deployment-spezifisch und kommen daher aus der .env-Datei
-      # (siehe .env.example) statt hier im Repo zu stehen. Ist eine Variable
-      # nicht gesetzt, bleibt sie leer und der OTLP-Export wird automatisch
-      # deaktiviert (siehe AddOpenTelemetryExporters in Extensions.cs).
+      # Send logs/metrics/traces to the Grafana stack via OTLP. Each signal
+      # has its own backend (logs -> Loki, metrics -> Prometheus,
+      # traces -> Tempo). The actual hosts/ports are deployment-specific and
+      # therefore come from the .env file (see .env.example) instead of
+      # being hardcoded in the repo. If a variable is unset, it stays empty
+      # and the respective OTLP export is automatically disabled (see
+      # AddOpenTelemetryExporters in Extensions.cs).
       - OTEL_SERVICE_NAME=oiltank-watcher
       - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}

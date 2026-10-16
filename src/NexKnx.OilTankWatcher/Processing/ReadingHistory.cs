@@ -1,9 +1,9 @@
 namespace NexKnx.OilTankWatcher.Processing;
 
 /// <summary>
-/// Hält die Füllstands-Historie für ein gleitendes Zeitfenster (z. B. 30 Tage)
-/// als Grundlage für die Restreichweitenschätzung. Die Historie liegt nur im
-/// Arbeitsspeicher und beginnt nach einem Neustart des Dienstes neu.
+/// Holds the fill-level history for a sliding time window (e.g. 30 days) as
+/// the basis for the remaining runtime estimation. The history only lives
+/// in memory and starts fresh after a restart of the service.
 /// </summary>
 public sealed class ReadingHistory
 {

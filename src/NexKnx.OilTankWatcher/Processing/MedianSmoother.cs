@@ -1,8 +1,8 @@
 namespace NexKnx.OilTankWatcher.Processing;
 
 /// <summary>
-/// Glättet eine Messreihe durch den Median der letzten N gültigen Werte
-/// (gleitendes Fenster).
+/// Smooths a series of readings via the median of the last N valid values
+/// (sliding window).
 /// </summary>
 public sealed class MedianSmoother
 {
@@ -13,7 +13,7 @@ public sealed class MedianSmoother
     {
         if (windowSize <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(windowSize), "Die Fenstergröße muss größer als 0 sein.");
+            throw new ArgumentOutOfRangeException(nameof(windowSize), "The window size must be greater than 0.");
         }
 
         _windowSize = windowSize;

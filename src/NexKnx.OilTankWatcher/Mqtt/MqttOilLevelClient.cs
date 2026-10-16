@@ -9,16 +9,17 @@ using NexKnx.OilTankWatcher.Logging;
 namespace NexKnx.OilTankWatcher.Mqtt;
 
 /// <summary>
-/// MQTT-Client für den Füllstand-Rohwert des ESP32-CAM / AI-on-the-edge-device.
+/// MQTT client for the raw fill-level value from the ESP32-CAM /
+/// AI-on-the-edge-device.
 ///
-/// API-Stand gegen die tatsächlich installierte MQTTnet-Version 5.2.0
-/// verifiziert (per Reflection): Kernpaket "MQTTnet" ohne ManagedClient
-/// (dieser wurde ab MQTTnet 5 aus dem Kernpaket entfernt) - Auto-Reconnect
-/// wird daher hier über DisconnectedAsync + eigene Backoff-Schleife
-/// realisiert. "MqttClientFactory" (nicht mehr "MqttFactory"),
-/// "MqttApplicationMessageExtensions.ConvertPayloadToString()" und die
-/// Convenience-Erweiterung "SubscribeAsync(topic, qos, ct)" existieren in
-/// dieser Version exakt so.
+/// API shape verified against the actually installed MQTTnet version 5.2.0
+/// (by reflection): the core package "MQTTnet" has no ManagedClient
+/// (removed from the core package as of MQTTnet 5) - auto-reconnect is
+/// therefore implemented here via DisconnectedAsync + a custom backoff
+/// loop. "MqttClientFactory" (no longer "MqttFactory"),
+/// "MqttApplicationMessageExtensions.ConvertPayloadToString()" and the
+/// convenience extension "SubscribeAsync(topic, qos, ct)" exist exactly
+/// like this in this version.
 /// </summary>
 public sealed class MqttOilLevelClient : IMqttOilLevelClient
 {
@@ -36,10 +37,10 @@ public sealed class MqttOilLevelClient : IMqttOilLevelClient
     }
 
     /// <summary>
-    /// Für Tests: erlaubt das Einschleusen eines gefälschten <see cref="IMqttClient"/>,
-    /// ohne eine echte Netzwerkverbindung aufzubauen. <see cref="IMqttClient"/> ist
-    /// selbst ein von MQTTnet bereitgestelltes Interface und daher ohne eigene
-    /// Testnaht fakebar.
+    /// For tests: allows injecting a fake <see cref="IMqttClient"/> without
+    /// establishing a real network connection. <see cref="IMqttClient"/> is
+    /// itself an interface provided by MQTTnet and therefore fakeable
+    /// without its own test seam.
     /// </summary>
     internal MqttOilLevelClient(MqttOptions options, ILogger<MqttOilLevelClient> logger, IMqttClient client)
     {
@@ -91,7 +92,7 @@ public sealed class MqttOilLevelClient : IMqttOilLevelClient
             {
                 _logger.LogWarning(
                     ex,
-                    "MQTT-Verbindung zu {Host}:{Port} fehlgeschlagen, erneuter Versuch in {Delay}.",
+                    "MQTT connection to {Host}:{Port} failed, retrying in {Delay}.",
                     _options.Host,
                     _options.Port,
                     delay);
@@ -113,11 +114,11 @@ public sealed class MqttOilLevelClient : IMqttOilLevelClient
         }
 
         _logger.LogWarning(
-            "MQTT-Verbindung getrennt ({Reason}). Automatischer Reconnect wird gestartet.",
+            "MQTT connection lost ({Reason}). Starting automatic reconnect.",
             args.Reason);
 
-        // Nicht hier awaiten: die Reconnect-Schleife läuft unabhängig im
-        // Hintergrund weiter, der Disconnect-Handler selbst muss zügig zurückkehren.
+        // Don't await here: the reconnect loop keeps running independently
+        // in the background, the disconnect handler itself must return promptly.
         _ = ConnectWithRetryAsync(_lifetimeToken);
         return Task.CompletedTask;
     }
@@ -132,17 +133,17 @@ public sealed class MqttOilLevelClient : IMqttOilLevelClient
         }
         else
         {
-            _logger.LogWarning("MQTT-Payload konnte nicht als Prozentwert interpretiert werden: '{Payload}'", payload);
+            _logger.LogWarning("MQTT payload could not be interpreted as a percent value: '{Payload}'", payload);
         }
 
         return Task.CompletedTask;
     }
 
     /// <summary>
-    /// Das AI-on-the-edge-device veröffentlicht den Hauptwert standardmäßig
-    /// als reine Zahl im Klartext. Zusätzlich wird defensiv ein einfaches
-    /// JSON-Objekt mit einer "value"-Eigenschaft unterstützt, falls eine
-    /// abweichende Konfiguration verwendet wird.
+    /// The AI-on-the-edge-device publishes the main value by default as a
+    /// plain number in plain text. In addition, a simple JSON object with a
+    /// "value" property is defensively supported, in case a different
+    /// configuration is used.
     /// </summary>
     internal static bool TryParsePercent(string payload, out double percent)
     {
@@ -165,7 +166,7 @@ public sealed class MqttOilLevelClient : IMqttOilLevelClient
         }
         catch (JsonException)
         {
-            // Kein JSON - wurde oben bereits als Klartext-Zahl versucht.
+            // Not JSON - already attempted as a plain-text number above.
         }
 
         percent = 0;
@@ -176,8 +177,9 @@ public sealed class MqttOilLevelClient : IMqttOilLevelClient
     {
         if (_client.IsConnected)
         {
-            // Dispose darf nicht am (ggf. schon abgelaufenen) Lifetime-Token
-            // der Verbindung haengen - deshalb bewusst CancellationToken.None.
+            // Dispose must not depend on the (possibly already expired)
+            // lifetime token of the connection - hence deliberately
+            // CancellationToken.None.
             await _client.DisconnectAsync(cancellationToken: CancellationToken.None);
         }
 

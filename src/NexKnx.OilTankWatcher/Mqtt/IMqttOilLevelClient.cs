@@ -1,19 +1,19 @@
 namespace NexKnx.OilTankWatcher.Mqtt;
 
 /// <summary>
-/// Abstraktion über den MQTT-Client für den Füllstand-Rohwert, damit der
-/// <see cref="NexKnx.OilTankWatcher.Worker"/> unabhängig von der konkreten MQTTnet-Implementierung
-/// getestet werden kann.
+/// Abstraction over the MQTT client for the raw fill-level value, so that
+/// <see cref="NexKnx.OilTankWatcher.Worker"/> can be tested independently of
+/// the concrete MQTTnet implementation.
 /// </summary>
 public interface IMqttOilLevelClient : IAsyncDisposable
 {
     /// <summary>
-    /// Wird ausgelöst, sobald ein neuer Füllstand-Rohwert (in Prozent) empfangen wurde.
+    /// Raised as soon as a new raw fill-level value (in percent) has been received.
     /// </summary>
     event Action<double>? ValueReceived;
 
     /// <summary>
-    /// Baut die MQTT-Verbindung auf und abonniert das konfigurierte Topic.
+    /// Establishes the MQTT connection and subscribes to the configured topic.
     /// </summary>
     Task StartAsync(CancellationToken cancellationToken);
 }

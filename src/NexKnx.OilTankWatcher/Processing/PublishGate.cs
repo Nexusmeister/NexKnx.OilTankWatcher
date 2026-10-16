@@ -1,9 +1,9 @@
 namespace NexKnx.OilTankWatcher.Processing;
 
 /// <summary>
-/// Entscheidet, ob ein neuer Zustand auf den KNX-Bus geschrieben werden soll:
-/// bei relevanter Änderung sofort, ansonsten nur zyklisch alle X Minuten.
-/// Verhindert unnötigen Bus-Traffic bei jeder einzelnen Messung.
+/// Decides whether a new state should be written to the KNX bus:
+/// immediately on a relevant change, otherwise only cyclically every X
+/// minutes. Prevents unnecessary bus traffic on every single reading.
 /// </summary>
 public sealed class PublishGate
 {

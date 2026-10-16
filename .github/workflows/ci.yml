@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # GHCR-Image-Pfade muessen vollstaendig kleingeschrieben sein.
+  # GHCR image paths must be fully lowercase.
   IMAGE_NAME: nexusmeister/nexknx.oiltankwatcher
 
 jobs:
@@ -24,37 +24,37 @@ jobs:
     outputs:
       semVer: ${{ steps.gitversion.outputs.semVer }}
     steps:
-      - name: Code auschecken
+      - name: Check out code
         uses: actions/checkout@v7
         with:
-          # Volle Historie (inkl. Tags) wird von GitVersion benoetigt, um
-          # die Version aus dem letzten Tag + Commit-Abstand zu berechnen.
+          # Full history (including tags) is required by GitVersion to
+          # compute the version from the last tag + commit distance.
           fetch-depth: 0
 
-      - name: .NET SDK einrichten
+      - name: Set up .NET SDK
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "10.0.x"
 
-      - name: GitVersion einrichten
+      - name: Set up GitVersion
         uses: gittools/actions/gitversion/setup@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
         with:
           versionSpec: "6.x"
 
-      - name: Version aus Git-Historie ermitteln
+      - name: Determine version from Git history
         id: gitversion
         uses: gittools/actions/gitversion/execute@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
 
-      - name: Wiederherstellen
+      - name: Restore
         run: dotnet restore
 
-      - name: Bauen
+      - name: Build
         run: >-
           dotnet build --configuration Release --no-restore
           -p:Version=${{ steps.gitversion.outputs.semVer }}
           -p:InformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
 
-      - name: Testen
+      - name: Test
         run: >-
           dotnet test --configuration Release --no-build
           --logger "trx;LogFileName=test-results.trx"
@@ -62,7 +62,7 @@ jobs:
           --settings tests/NexKnx.OilTankWatcher.Tests/coverlet.runsettings
           --results-directory ./coverage
 
-      - name: Testergebnisse veroeffentlichen
+      - name: Publish test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -70,15 +70,15 @@ jobs:
           path: "**/test-results.trx"
           retention-days: 7
 
-      - name: Testergebnisse in Job-Summary anzeigen
+      - name: Show test results in job summary
         if: always()
         uses: dorny/test-reporter@4a2e97665d5fa767581ef38eca97b9694bd4eef4 # v2
         with:
-          name: Testergebnisse
+          name: Test results
           path: "**/test-results.trx"
           reporter: dotnet-trx
 
-      - name: Code-Coverage-Bericht erzeugen
+      - name: Generate code coverage report
         if: always()
         uses: danielpalme/ReportGenerator-GitHub-Action@d3ebf1f760f7d8ab92cc44d9bcfee7ad73722a31 # v5.5.11
         with:
@@ -86,11 +86,11 @@ jobs:
           targetdir: "coverage-report"
           reporttypes: "MarkdownSummaryGithub;Html"
 
-      - name: Code Coverage in Job-Summary veroeffentlichen
+      - name: Publish code coverage in job summary
         if: always()
         run: cat coverage-report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Code-Coverage-Bericht veroeffentlichen
+      - name: Publish code coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -99,17 +99,17 @@ jobs:
           retention-days: 7
 
   dependency-scan:
-    name: Trivy Abhaengigkeits-Scan
-    # Laeuft immer (PR und Push auf main), damit verwundbare Abhaengigkeiten
-    # schon vor dem Merge auffallen.
+    name: Trivy dependency scan
+    # Always runs (PR and push to main), so vulnerable dependencies are
+    # already flagged before the merge.
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Code auschecken
+      - name: Check out code
         uses: actions/checkout@v7
 
-      - name: Abhaengigkeiten scannen (Dateisystem)
+      - name: Scan dependencies (filesystem)
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
         with:
           scan-type: fs
@@ -120,66 +120,66 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: "0"
 
-      - name: Scan-Ergebnisse in Job-Summary veroeffentlichen
+      - name: Publish scan results in job summary
         if: always()
         run: |
-          echo '## Trivy Abhaengigkeits-Scan' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Trivy dependency scan' >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat trivy-dependencies.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
   sonarcloud:
-    name: SonarCloud-Analyse
+    name: SonarCloud analysis
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Code auschecken
+      - name: Check out code
         uses: actions/checkout@v7
         with:
-          # SonarCloud braucht die volle Historie fuer Blame-Informationen.
+          # SonarCloud needs the full history for blame information.
           fetch-depth: 0
 
-      - name: .NET SDK einrichten
+      - name: Set up .NET SDK
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "10.0.x"
 
-      - name: JDK einrichten (fuer den SonarScanner)
+      - name: Set up JDK (for the SonarScanner)
         uses: actions/setup-java@v5
         with:
           java-version: 21
           distribution: "zulu"
 
-      - name: SonarScanner-Cache
+      - name: SonarScanner cache
         uses: actions/cache@v4
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      - name: SonarScanner installieren
+      - name: Install SonarScanner
         run: dotnet tool install --global dotnet-sonarscanner
 
-      - name: GitVersion einrichten
+      - name: Set up GitVersion
         uses: gittools/actions/gitversion/setup@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
         with:
           versionSpec: "6.x"
 
-      - name: Version aus Git-Historie ermitteln
+      - name: Determine version from Git history
         id: gitversion
         uses: gittools/actions/gitversion/execute@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
 
-      - name: SonarScanner-Analyse starten
+      - name: Start SonarScanner analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        # SONAR_TOKEN wird vom Scanner automatisch aus der Umgebungsvariable
-        # gelesen - bewusst nicht per ${{ secrets.SONAR_TOKEN }} in das
-        # run-Skript expandiert (siehe GitHub-Issue #24, Sonar-Regel S7636).
-        # sonar.coverage.exclusions spiegelt dieselben, bereits in
-        # coverlet.runsettings begruendeten Ausnahmen (Issue #10) - ohne diese
-        # zaehlt SonarCloud nicht lokal getestete Dateien sonst als 0% statt
-        # sie aus der Berechnung auszunehmen.
+        # SONAR_TOKEN is read automatically by the scanner from the
+        # environment variable - deliberately not expanded via
+        # ${{ secrets.SONAR_TOKEN }} into the run script (see GitHub issue
+        # #24, Sonar rule S7636). sonar.coverage.exclusions mirrors the same
+        # exceptions already justified in coverlet.runsettings (issue #10) -
+        # without these, SonarCloud would otherwise count files not tested
+        # locally as 0% instead of excluding them from the calculation.
         run: >-
           dotnet-sonarscanner begin
           /k:"Nexusmeister_NexKnx.OilTankWatcher"
@@ -187,48 +187,48 @@ jobs:
           /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
           /d:sonar.coverage.exclusions="src/NexKnx.OilTankWatcher/Program.cs,src/NexKnx.OilTankWatcher/Knx/FalconKnxGateway.cs,aspire/NexKnx.OilTankWatcher.AppHost/AppHost.cs,aspire/NexKnx.OilTankWatcher.ServiceDefaults/Extensions.cs"
 
-      - name: Wiederherstellen
+      - name: Restore
         run: dotnet restore
 
-      - name: Bauen
+      - name: Build
         run: >-
           dotnet build --configuration Release --no-restore
           -p:Version=${{ steps.gitversion.outputs.semVer }}
           -p:InformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
 
-      - name: Testen (fuer Coverage-Daten)
+      - name: Test (for coverage data)
         run: >-
           dotnet test --configuration Release --no-build
           --collect:"XPlat Code Coverage"
           --settings tests/NexKnx.OilTankWatcher.Tests/coverlet.runsettings
           --results-directory ./coverage
 
-      - name: SonarScanner-Analyse abschliessen
+      - name: Finish SonarScanner analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: dotnet-sonarscanner end
 
   docker:
-    name: Docker Image bauen, scannen & veroeffentlichen
+    name: Build, scan & publish Docker image
     needs: build-test
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
-      - name: Code auschecken
+      - name: Check out code
         uses: actions/checkout@v7
 
-      - name: QEMU einrichten (fuer arm64-Cross-Build)
+      - name: Set up QEMU (for arm64 cross-build)
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
 
-      - name: Buildx einrichten
+      - name: Set up Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      # Nur bei einem tatsaechlichen Push auf main (= abgeschlossene PR)
-      # bei der GitHub Container Registry anmelden und danach pushen.
-      # Bei Pull Requests wird das Image nur gebaut, nicht veroeffentlicht.
-      - name: Bei GitHub Container Registry anmelden
+      # Only log in to the GitHub Container Registry and push afterwards on
+      # an actual push to main (= a completed PR). On pull requests the
+      # image is only built, not published.
+      - name: Log in to GitHub Container Registry
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -236,7 +236,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Metadaten (Tags/Labels) ermitteln
+      - name: Determine metadata (tags/labels)
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
@@ -246,7 +246,7 @@ jobs:
             type=sha,format=short
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Image bauen (und bei main veroeffentlichen)
+      - name: Build image (and publish on main)
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -260,9 +260,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Eigenstaendiger Single-Arch-Build, lokal in den Docker-Daemon geladen,
-      # damit das Image auch bei PRs (ohne Registry-Push) gescannt werden kann.
-      - name: Image fuer den Scan lokal bauen
+      # Standalone single-arch build, loaded locally into the Docker daemon,
+      # so the image can also be scanned on PRs (without a registry push).
+      - name: Build image locally for the scan
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -275,7 +275,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Image scannen
+      - name: Scan image
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
         with:
           scan-type: image
@@ -285,10 +285,10 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: "0"
 
-      - name: Image-Scan-Ergebnisse in Job-Summary veroeffentlichen
+      - name: Publish image scan results in job summary
         if: always()
         run: |
-          echo '## Trivy Image-Scan' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Trivy image scan' >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat trivy-image.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"

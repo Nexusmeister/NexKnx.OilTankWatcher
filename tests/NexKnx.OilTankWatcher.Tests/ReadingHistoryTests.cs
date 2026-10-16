@@ -26,7 +26,7 @@ public class ReadingHistoryTests
         var history = new ReadingHistory(TimeSpan.FromDays(30));
         var now = DateTimeOffset.UtcNow;
 
-        // Weit außerhalb des Retention-Fensters, bezogen auf den zweiten Add-Aufruf.
+        // Far outside the retention window, relative to the second Add call.
         history.Add(new LevelSample(now.AddDays(-40), 90));
         history.Add(new LevelSample(now, 60));
 
@@ -49,10 +49,10 @@ public class ReadingHistoryTests
     [Fact]
     public void Add_PruningIsRelativeToLatestAddedSample_NotWallClockTime()
     {
-        // Die Implementierung prunt relativ zum Zeitstempel des gerade
-        // hinzugefügten Samples (nicht relativ zu DateTimeOffset.UtcNow) -
-        // ein alter, aber noch innerhalb der Retention bezogen auf den
-        // zweiten Sample liegender Wert bleibt erhalten.
+        // The implementation prunes relative to the timestamp of the sample
+        // just added (not relative to DateTimeOffset.UtcNow) - an old value
+        // that is still within the retention window relative to the second
+        // sample is kept.
         var history = new ReadingHistory(TimeSpan.FromDays(30));
         var baseline = new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
 

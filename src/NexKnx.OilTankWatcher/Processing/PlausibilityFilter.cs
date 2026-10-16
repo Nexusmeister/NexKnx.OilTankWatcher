@@ -1,9 +1,9 @@
 namespace NexKnx.OilTankWatcher.Processing;
 
 /// <summary>
-/// Verwirft Messwerte außerhalb des gültigen Bereichs (0-100 %) sowie
-/// Ausreißer, die sprunghaft (mehr als die konfigurierte maximale Änderung
-/// pro Messung) vom zuletzt akzeptierten Wert abweichen.
+/// Rejects readings outside the valid range (0-100 %) as well as outliers
+/// that deviate abruptly (more than the configured maximum change per
+/// reading) from the last accepted value.
 /// </summary>
 public sealed class PlausibilityFilter
 {
@@ -14,7 +14,7 @@ public sealed class PlausibilityFilter
     {
         if (maxStepPercent <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(maxStepPercent), "Die maximale Änderung muss größer als 0 sein.");
+            throw new ArgumentOutOfRangeException(nameof(maxStepPercent), "The maximum change must be greater than 0.");
         }
 
         _maxStepPercent = maxStepPercent;
@@ -26,15 +26,15 @@ public sealed class PlausibilityFilter
     {
         if (rawPercent < 0 || rawPercent > 100)
         {
-            rejectReason = $"Wert {rawPercent:0.##} liegt außerhalb des gültigen Bereichs 0-100%.";
+            rejectReason = $"Value {rawPercent:0.##} is outside the valid range 0-100%.";
             return false;
         }
 
         if (_lastAccepted is { } previous && Math.Abs(rawPercent - previous) > _maxStepPercent)
         {
             rejectReason =
-                $"Sprung von {previous:0.##}% auf {rawPercent:0.##}% überschreitet die maximale " +
-                $"Änderung von {_maxStepPercent:0.##} Prozentpunkten pro Messung.";
+                $"Jump from {previous:0.##}% to {rawPercent:0.##}% exceeds the maximum " +
+                $"change of {_maxStepPercent:0.##} percentage points per reading.";
             return false;
         }
 

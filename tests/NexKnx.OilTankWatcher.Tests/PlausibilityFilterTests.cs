@@ -57,8 +57,8 @@ public class PlausibilityFilterTests
 
         accepted.ShouldBeFalse();
         reason.ShouldNotBeNull();
-        // Zuletzt akzeptierter Wert bleibt unverändert, der Ausreißer darf
-        // die Referenz für zukünftige Prüfungen nicht verfälschen.
+        // Last accepted value stays unchanged - the outlier must not
+        // corrupt the reference for future checks.
         filter.LastAccepted.ShouldBe(50);
     }
 

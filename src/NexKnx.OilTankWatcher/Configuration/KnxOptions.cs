@@ -15,27 +15,27 @@ public sealed class KnxOptions
     public KnxRoutingOptions Routing { get; set; } = new();
     public KnxGroupAddressOptions GroupAddresses { get; set; } = new();
 
-    /// Füllstand (%), bei dem das Warnbit gesetzt wird.
+    /// Fill level (%) at which the warning bit is set.
     public double WarningThresholdPercent { get; set; } = 25;
 
-    /// Füllstand (%), ab dem das Warnbit (Hysterese) wieder zurückgenommen wird.
+    /// Fill level (%) above which the warning bit (hysteresis) is cleared again.
     public double WarningRecoveryPercent { get; set; } = 28;
 
-    /// Zeit ohne gültigen Messwert, nach der das Störungsbit gesetzt wird.
+    /// Time without a valid reading after which the fault bit is set.
     public double FaultAfterHours { get; set; } = 12;
 
-    /// Zyklisches Sendeintervall auf den KNX-Bus, unabhängig von Änderungen.
+    /// Cyclic send interval onto the KNX bus, independent of changes.
     public int SendIntervalMinutes { get; set; } = 10;
 
-    /// Mindeständerung des Füllstands (%), die ein sofortiges Senden auslöst.
+    /// Minimum change in fill level (%) that triggers an immediate send.
     public double ChangeThresholdPercent { get; set; } = 0.5;
 }
 
 public sealed class KnxTunnelingOptions
 {
-    // Kein Default: die IP der KNX/IP-Schnittstelle ist umgebungsspezifisch
-    // und wird ausschliesslich ueber appsettings.json bzw. Knx__Tunneling__Host
-    // (siehe README) gesetzt.
+    // No default: the IP of the KNX/IP interface is environment-specific
+    // and is set exclusively via appsettings.json or Knx__Tunneling__Host
+    // (see README).
     public string Host { get; set; } = string.Empty;
     public int Port { get; set; } = 3671;
     public bool UseNat { get; set; } = false;
@@ -43,9 +43,8 @@ public sealed class KnxTunnelingOptions
 
 public sealed class KnxRoutingOptions
 {
-    // NOSONAR (S1313): offizielle, von der KNX-Spezifikation fest
-    // vorgegebene Multicast-Adresse fuer KNXnet/IP-Routing - kein
-    // umgebungsspezifischer Wert.
+    // NOSONAR (S1313): official multicast address fixed by the KNX
+    // specification for KNXnet/IP routing - not an environment-specific value.
     public string MulticastAddress { get; set; } = "224.0.23.12"; // NOSONAR
 }
 
