@@ -292,3 +292,32 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat trivy-image.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      # Only on an actual push to main: bump the pinned image tag that the
+      # Pi deploys, in the separate NexInfra repo. That repo's self-hosted
+      # runner workflow picks up the resulting commit automatically.
+      - name: Bump oiltank-watcher image tag in NexInfra
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.NEXINFRA_PUSH_TOKEN }}
+        run: |
+          set -eu
+          SHA_TAG="sha-$(git rev-parse --short HEAD)"
+
+          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/Nexusmeister/NexInfra.git" nexinfra
+          cd nexinfra
+
+          sed -i -E "s#(ghcr\.io/nexusmeister/nexknx\.oiltankwatcher:)[A-Za-z0-9._-]+#\1${SHA_TAG}#" oiltank/docker-compose.yml
+
+          if git diff --quiet; then
+            echo "NexInfra already pinned to ${SHA_TAG}; nothing to do."
+            exit 0
+          fi
+
+          git config user.name "nexknx-ci"
+          git config user.email "ci@nexknx.local"
+          git add oiltank/docker-compose.yml
+          git commit -m "Bump oiltank-watcher image to ${SHA_TAG}
+
+Automated bump triggered by Nexusmeister/NexKnx.OilTankWatcher@${{ github.sha }}."
+          git push
