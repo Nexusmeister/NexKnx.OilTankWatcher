@@ -21,8 +21,8 @@ internal static partial class LoggerExtensions
     [LoggerMessage(Level = LogLevel.Information, Message = "Raw reading received: {RawPercent:0.0}%.")]
     public static partial void LogRawValueReceived(this ILogger logger, double rawPercent);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "KNX updated: {Percent:0.0}% ({Liters:0} l), raw reading={RawPercent:0.0}%, warning={Warning}, fault={Fault}.")]
-    public static partial void LogKnxUpdated(this ILogger logger, double percent, double liters, double rawPercent, bool warning, bool fault);
+    [LoggerMessage(Level = LogLevel.Information, Message = "KNX updated: {Percent:0.0}% ({Liters:0} l), warning={Warning}, fault={Fault}.")]
+    public static partial void LogKnxUpdated(this ILogger logger, double percent, double liters, bool warning, bool fault);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "KNX connection state: {State}")]
     public static partial void LogKnxConnectionStateChanged(this ILogger logger, BusConnectionState state);

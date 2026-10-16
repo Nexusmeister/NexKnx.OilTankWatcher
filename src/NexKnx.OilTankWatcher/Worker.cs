@@ -21,7 +21,6 @@ public sealed class Worker : BackgroundService
     private readonly IKnxGateway _knxGateway;
     private readonly IHistoryRepository _historyRepository;
     private readonly TankOptions _tankOptions;
-    private readonly KnxOptions _knxOptions;
     private readonly RuntimeEstimationOptions _runtimeOptions;
     private readonly ILogger<Worker> _logger;
 
@@ -33,9 +32,8 @@ public sealed class Worker : BackgroundService
     private readonly PublishGate _publishGate;
     private readonly SemaphoreSlim _publishLock = new(1, 1);
 
-    private readonly object _stateLock = new();
+    private readonly Lock _stateLock = new();
     private double? _currentSmoothedPercent;
-    private double? _currentRawPercent;
     private DateTimeOffset _lastDailySampleAt = DateTimeOffset.MinValue;
 
     // Made observable for Grafana/Prometheus - the actual bits otherwise
@@ -57,16 +55,15 @@ public sealed class Worker : BackgroundService
         _knxGateway = knxGateway;
         _historyRepository = historyRepository;
         _tankOptions = tankOptions;
-        _knxOptions = knxOptions;
         _runtimeOptions = runtimeOptions;
         _logger = logger;
 
         _plausibilityFilter = new PlausibilityFilter(_tankOptions.MaxStepPercent);
         _medianSmoother = new MedianSmoother(_tankOptions.MedianWindowSize);
-        _warningGate = new HysteresisGate(_knxOptions.WarningThresholdPercent, _knxOptions.WarningRecoveryPercent);
-        _faultDetector = new FaultDetector(TimeSpan.FromHours(_knxOptions.FaultAfterHours), DateTimeOffset.UtcNow);
+        _warningGate = new HysteresisGate(knxOptions.WarningThresholdPercent, knxOptions.WarningRecoveryPercent);
+        _faultDetector = new FaultDetector(TimeSpan.FromHours(knxOptions.FaultAfterHours), DateTimeOffset.UtcNow);
         _history = new ReadingHistory(TimeSpan.FromDays(_runtimeOptions.HistoryDays));
-        _publishGate = new PublishGate(TimeSpan.FromMinutes(_knxOptions.SendIntervalMinutes), _knxOptions.ChangeThresholdPercent);
+        _publishGate = new PublishGate(TimeSpan.FromMinutes(knxOptions.SendIntervalMinutes), knxOptions.ChangeThresholdPercent);
 
         _meter.CreateObservableGauge(
             "oiltank_warning_active",
@@ -205,7 +202,6 @@ public sealed class Worker : BackgroundService
         lock (_stateLock)
         {
             _currentSmoothedPercent = smoothed;
-            _currentRawPercent = rawPercent;
         }
 
         if (now - _lastDailySampleAt >= TimeSpan.FromHours(24))
@@ -226,11 +222,9 @@ public sealed class Worker : BackgroundService
         try
         {
             double? smoothed;
-            double? rawPercent;
             lock (_stateLock)
             {
                 smoothed = _currentSmoothedPercent;
-                rawPercent = _currentRawPercent;
             }
 
             var now = DateTimeOffset.UtcNow;
@@ -270,7 +264,7 @@ public sealed class Worker : BackgroundService
 
             _publishGate.MarkSent(now, percent, warning, fault);
 
-            _logger.LogKnxUpdated(percent, liters, rawPercent ?? percent, warning, fault);
+            _logger.LogKnxUpdated(percent, liters, warning, fault);
         }
         catch (Exception ex)
         {
