@@ -33,10 +33,10 @@ public sealed class KnxOptions
 
 public sealed class KnxTunnelingOptions
 {
-    // NOSONAR (S1313): Komfort-Default fuer den lokalen Aufbau, nicht
-    // sicherheitsrelevant (privates LAN) und per Knx__Tunneling__Host
-    // (siehe README) ueberschreibbar - kein eigentliches Secret/Endpoint.
-    public string Host { get; set; } = "192.168.178.21"; // NOSONAR
+    // Kein Default: die IP der KNX/IP-Schnittstelle ist umgebungsspezifisch
+    // und wird ausschliesslich ueber appsettings.json bzw. Knx__Tunneling__Host
+    // (siehe README) gesetzt.
+    public string Host { get; set; } = string.Empty;
     public int Port { get; set; } = 3671;
     public bool UseNat { get; set; } = false;
 }

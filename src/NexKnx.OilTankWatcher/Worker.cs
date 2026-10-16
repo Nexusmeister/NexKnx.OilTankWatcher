@@ -1,6 +1,7 @@
 using System.Diagnostics.Metrics;
 using NexKnx.OilTankWatcher.Configuration;
 using NexKnx.OilTankWatcher.Knx;
+using NexKnx.OilTankWatcher.Logging;
 using NexKnx.OilTankWatcher.Mqtt;
 using NexKnx.OilTankWatcher.Persistence;
 using NexKnx.OilTankWatcher.Processing;
@@ -14,7 +15,7 @@ namespace NexKnx.OilTankWatcher;
 /// Auswertung (Störungs-Timeout, periodisches Resend), auch wenn gerade
 /// keine neuen MQTT-Nachrichten eintreffen.
 /// </summary>
-public sealed partial class Worker : BackgroundService
+public sealed class Worker : BackgroundService
 {
     private readonly IMqttOilLevelClient _mqttClient;
     private readonly IKnxGateway _knxGateway;
@@ -165,7 +166,7 @@ public sealed partial class Worker : BackgroundService
                 _lastDailySampleAt = persisted[^1].Timestamp;
             }
 
-            LogHistoryLoaded(persisted.Count);
+            _logger.LogHistoryLoaded(persisted.Count);
         }
         catch (Exception ex)
         {
@@ -263,7 +264,7 @@ public sealed partial class Worker : BackgroundService
 
             _publishGate.MarkSent(now, percent, warning, fault);
 
-            LogKnxUpdated(percent, liters, warning, fault);
+            _logger.LogKnxUpdated(percent, liters, warning, fault);
         }
         catch (Exception ex)
         {
@@ -282,10 +283,4 @@ public sealed partial class Worker : BackgroundService
         await _mqttClient.DisposeAsync();
         await _knxGateway.DisposeAsync();
     }
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "{Count} persistierte Historienwerte geladen.")]
-    private partial void LogHistoryLoaded(int count);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "KNX aktualisiert: {Percent:0.0}% ({Liters:0} l), Warnung={Warning}, Störung={Fault}.")]
-    private partial void LogKnxUpdated(double percent, double liters, bool warning, bool fault);
 }

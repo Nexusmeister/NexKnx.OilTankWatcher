@@ -5,6 +5,7 @@ using Knx.Falcon.Configuration;
 using Knx.Falcon.Sdk;
 using Microsoft.Extensions.Logging;
 using NexKnx.OilTankWatcher.Configuration;
+using NexKnx.OilTankWatcher.Logging;
 
 namespace NexKnx.OilTankWatcher.Knx;
 
@@ -29,7 +30,7 @@ namespace NexKnx.OilTankWatcher.Knx;
 ///     reine ETS-Projektmetadaten (Anzeige/Interpretation der Gruppenadresse)
 ///     und wird nicht mitübertragen.
 /// </summary>
-public sealed partial class FalconKnxGateway : IKnxGateway
+public sealed class FalconKnxGateway : IKnxGateway
 {
     private readonly KnxOptions _options;
     private readonly ILogger<FalconKnxGateway> _logger;
@@ -61,7 +62,7 @@ public sealed partial class FalconKnxGateway : IKnxGateway
         connectorParameters.AutoReconnect = true;
 
         _bus = new KnxBus(connectorParameters);
-        _bus.ConnectionStateChanged += (_, _) => LogConnectionStateChanged(_bus.ConnectionState);
+        _bus.ConnectionStateChanged += (_, _) => _logger.LogKnxConnectionStateChanged(_bus.ConnectionState);
     }
 
     private static ConnectorParameters BuildConnectorParameters(KnxOptions options) => options.ConnectionType switch
@@ -80,7 +81,7 @@ public sealed partial class FalconKnxGateway : IKnxGateway
     public async Task ConnectAsync(CancellationToken cancellationToken)
     {
         await _bus.ConnectAsync(cancellationToken);
-        LogConnected(_options.ConnectionType, _bus.ConnectionState);
+        _logger.LogKnxConnected(_options.ConnectionType, _bus.ConnectionState);
     }
 
     public Task WritePercentAsync(double percent, CancellationToken cancellationToken) =>
@@ -111,10 +112,4 @@ public sealed partial class FalconKnxGateway : IKnxGateway
     }
 
     public async ValueTask DisposeAsync() => await _bus.DisposeAsync();
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "KNX-Verbindungsstatus: {State}")]
-    private partial void LogConnectionStateChanged(BusConnectionState state);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "KNX-Bus verbunden ({ConnectionType}), Status: {State}.")]
-    private partial void LogConnected(KnxConnectionType connectionType, BusConnectionState state);
 }

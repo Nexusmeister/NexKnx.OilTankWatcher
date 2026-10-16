@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using NexKnx.OilTankWatcher;
 using NexKnx.OilTankWatcher.Configuration;
 using NexKnx.OilTankWatcher.Knx;
+using NexKnx.OilTankWatcher.Logging;
 using NexKnx.OilTankWatcher.Mqtt;
 using NexKnx.OilTankWatcher.Persistence;
 
@@ -46,9 +47,3 @@ var version = typeof(Worker).Assembly
 host.Services.GetRequiredService<ILogger<Program>>().LogStartup(version ?? "unbekannt");
 
 await host.RunAsync();
-
-internal static partial class ProgramLog
-{
-    [LoggerMessage(Level = LogLevel.Information, Message = "NexKnx.OilTankWatcher Version {Version} startet.")]
-    public static partial void LogStartup(this ILogger logger, string version);
-}
