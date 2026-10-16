@@ -16,7 +16,7 @@ namespace NexKnx.OilTankWatcher;
 /// </summary>
 public sealed class Worker : BackgroundService
 {
-    private readonly MqttOilLevelClient _mqttClient;
+    private readonly IMqttOilLevelClient _mqttClient;
     private readonly IKnxGateway _knxGateway;
     private readonly IHistoryRepository _historyRepository;
     private readonly TankOptions _tankOptions;
@@ -43,7 +43,7 @@ public sealed class Worker : BackgroundService
     private int _faultActive;
 
     public Worker(
-        MqttOilLevelClient mqttClient,
+        IMqttOilLevelClient mqttClient,
         IKnxGateway knxGateway,
         IHistoryRepository historyRepository,
         TankOptions tankOptions,

@@ -19,7 +19,7 @@ namespace NexKnx.OilTankWatcher.Mqtt;
 /// Convenience-Erweiterung "SubscribeAsync(topic, qos, ct)" existieren in
 /// dieser Version exakt so.
 /// </summary>
-public sealed class MqttOilLevelClient : IAsyncDisposable
+public sealed class MqttOilLevelClient : IMqttOilLevelClient
 {
     private readonly MqttOptions _options;
     private readonly ILogger<MqttOilLevelClient> _logger;
@@ -30,14 +30,23 @@ public sealed class MqttOilLevelClient : IAsyncDisposable
     public event Action<double>? ValueReceived;
 
     public MqttOilLevelClient(MqttOptions options, ILogger<MqttOilLevelClient> logger)
+        : this(options, logger, new MqttClientFactory().CreateMqttClient())
+    {
+    }
+
+    /// <summary>
+    /// Für Tests: erlaubt das Einschleusen eines gefälschten <see cref="IMqttClient"/>,
+    /// ohne eine echte Netzwerkverbindung aufzubauen. <see cref="IMqttClient"/> ist
+    /// selbst ein von MQTTnet bereitgestelltes Interface und daher ohne eigene
+    /// Testnaht fakebar.
+    /// </summary>
+    internal MqttOilLevelClient(MqttOptions options, ILogger<MqttOilLevelClient> logger, IMqttClient client)
     {
         _options = options;
         _logger = logger;
+        _client = client;
 
-        var factory = new MqttClientFactory();
-        _client = factory.CreateMqttClient();
-
-        var optionsBuilder = factory.CreateClientOptionsBuilder()
+        var optionsBuilder = new MqttClientOptionsBuilder()
             .WithTcpServer(options.Host, options.Port)
             .WithClientId(options.ClientId)
             .WithCleanSession();
