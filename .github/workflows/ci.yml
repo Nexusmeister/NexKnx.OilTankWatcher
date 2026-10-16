@@ -148,3 +148,60 @@ jobs:
             VERSION=${{ needs.build-test.outputs.semVer }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  trivy-scan:
+    name: Trivy Sicherheitsscan
+    # Laeuft nur nach einem tatsaechlichen Push auf main (= abgeschlossene PR),
+    # da erst dann ein veroeffentlichtes Image zum Scannen existiert.
+    needs: [build-test, docker]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v7
+
+      - name: Abhaengigkeiten scannen (Dateisystem)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          format: sarif
+          output: trivy-dependencies.sarif
+          severity: CRITICAL,HIGH
+          exit-code: "0"
+
+      - name: Abhaengigkeits-Scan-Ergebnisse hochladen
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-dependencies.sarif
+          category: trivy-dependencies
+
+      - name: Bei GitHub Container Registry anmelden
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image scannen
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: image
+          image-ref: ghcr.io/${{ env.IMAGE_NAME }}:${{ needs.build-test.outputs.semVer }}
+          format: sarif
+          output: trivy-image.sarif
+          severity: CRITICAL,HIGH
+          exit-code: "0"
+
+      - name: Image-Scan-Ergebnisse hochladen
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image.sarif
+          category: trivy-image
