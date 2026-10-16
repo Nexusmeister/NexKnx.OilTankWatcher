@@ -21,7 +21,6 @@ public sealed class Worker : BackgroundService
     private readonly IKnxGateway _knxGateway;
     private readonly IHistoryRepository _historyRepository;
     private readonly TankOptions _tankOptions;
-    private readonly KnxOptions _knxOptions;
     private readonly RuntimeEstimationOptions _runtimeOptions;
     private readonly ILogger<Worker> _logger;
 
@@ -33,7 +32,7 @@ public sealed class Worker : BackgroundService
     private readonly PublishGate _publishGate;
     private readonly SemaphoreSlim _publishLock = new(1, 1);
 
-    private readonly object _stateLock = new();
+    private readonly Lock _stateLock = new();
     private double? _currentSmoothedPercent;
     private DateTimeOffset _lastDailySampleAt = DateTimeOffset.MinValue;
 
@@ -56,16 +55,15 @@ public sealed class Worker : BackgroundService
         _knxGateway = knxGateway;
         _historyRepository = historyRepository;
         _tankOptions = tankOptions;
-        _knxOptions = knxOptions;
         _runtimeOptions = runtimeOptions;
         _logger = logger;
 
         _plausibilityFilter = new PlausibilityFilter(_tankOptions.MaxStepPercent);
         _medianSmoother = new MedianSmoother(_tankOptions.MedianWindowSize);
-        _warningGate = new HysteresisGate(_knxOptions.WarningThresholdPercent, _knxOptions.WarningRecoveryPercent);
-        _faultDetector = new FaultDetector(TimeSpan.FromHours(_knxOptions.FaultAfterHours), DateTimeOffset.UtcNow);
+        _warningGate = new HysteresisGate(knxOptions.WarningThresholdPercent, knxOptions.WarningRecoveryPercent);
+        _faultDetector = new FaultDetector(TimeSpan.FromHours(knxOptions.FaultAfterHours), DateTimeOffset.UtcNow);
         _history = new ReadingHistory(TimeSpan.FromDays(_runtimeOptions.HistoryDays));
-        _publishGate = new PublishGate(TimeSpan.FromMinutes(_knxOptions.SendIntervalMinutes), _knxOptions.ChangeThresholdPercent);
+        _publishGate = new PublishGate(TimeSpan.FromMinutes(knxOptions.SendIntervalMinutes), knxOptions.ChangeThresholdPercent);
 
         _meter.CreateObservableGauge(
             "oiltank_warning_active",
@@ -194,6 +192,8 @@ public sealed class Worker : BackgroundService
             _logger.LogWarning("Reading rejected: {Reason}", rejectReason);
             return;
         }
+
+        _logger.LogRawValueReceived(rawPercent);
 
         var now = DateTimeOffset.UtcNow;
         var smoothed = _medianSmoother.Add(rawPercent);
