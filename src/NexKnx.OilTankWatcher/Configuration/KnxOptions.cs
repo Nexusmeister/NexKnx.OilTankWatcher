@@ -33,14 +33,20 @@ public sealed class KnxOptions
 
 public sealed class KnxTunnelingOptions
 {
-    public string Host { get; set; } = "192.168.178.21";
+    // NOSONAR (S1313): Komfort-Default fuer den lokalen Aufbau, nicht
+    // sicherheitsrelevant (privates LAN) und per Knx__Tunneling__Host
+    // (siehe README) ueberschreibbar - kein eigentliches Secret/Endpoint.
+    public string Host { get; set; } = "192.168.178.21"; // NOSONAR
     public int Port { get; set; } = 3671;
     public bool UseNat { get; set; } = false;
 }
 
 public sealed class KnxRoutingOptions
 {
-    public string MulticastAddress { get; set; } = "224.0.23.12";
+    // NOSONAR (S1313): offizielle, von der KNX-Spezifikation fest
+    // vorgegebene Multicast-Adresse fuer KNXnet/IP-Routing - kein
+    // umgebungsspezifischer Wert.
+    public string MulticastAddress { get; set; } = "224.0.23.12"; // NOSONAR
 }
 
 public sealed class KnxGroupAddressOptions

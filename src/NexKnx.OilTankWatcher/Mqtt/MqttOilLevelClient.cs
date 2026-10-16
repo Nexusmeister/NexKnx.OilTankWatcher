@@ -19,7 +19,7 @@ namespace NexKnx.OilTankWatcher.Mqtt;
 /// Convenience-Erweiterung "SubscribeAsync(topic, qos, ct)" existieren in
 /// dieser Version exakt so.
 /// </summary>
-public sealed class MqttOilLevelClient : IMqttOilLevelClient
+public sealed partial class MqttOilLevelClient : IMqttOilLevelClient
 {
     private readonly MqttOptions _options;
     private readonly ILogger<MqttOilLevelClient> _logger;
@@ -83,11 +83,7 @@ public sealed class MqttOilLevelClient : IMqttOilLevelClient
                     MqttQualityOfServiceLevel.AtLeastOnce,
                     cancellationToken);
 
-                _logger.LogInformation(
-                    "MQTT verbunden mit {Host}:{Port}, Topic '{Topic}'.",
-                    _options.Host,
-                    _options.Port,
-                    _options.Topic);
+                LogConnected(_options.Host, _options.Port, _options.Topic);
                 return;
             }
             catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
@@ -179,9 +175,14 @@ public sealed class MqttOilLevelClient : IMqttOilLevelClient
     {
         if (_client.IsConnected)
         {
-            await _client.DisconnectAsync();
+            // Dispose darf nicht am (ggf. schon abgelaufenen) Lifetime-Token
+            // der Verbindung haengen - deshalb bewusst CancellationToken.None.
+            await _client.DisconnectAsync(cancellationToken: CancellationToken.None);
         }
 
         _client.Dispose();
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "MQTT verbunden mit {Host}:{Port}, Topic '{Topic}'.")]
+    private partial void LogConnected(string host, int port, string topic);
 }

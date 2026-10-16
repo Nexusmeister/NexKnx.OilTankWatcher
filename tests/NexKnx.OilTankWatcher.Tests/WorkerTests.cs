@@ -61,7 +61,13 @@ file sealed class KnxGatewayHarness
             });
         Gateway.WriteRuntimeDaysAsync(Arg.Do<double>(d => RuntimeDaysWrites.Add(d)), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
+
+        // CA2012: NSubstitute-Konfigurationsaufruf, kein tatsaechlicher
+        // ValueTask-Verbrauch - der Aufruf wird von NSubstitute abgefangen,
+        // nicht wirklich ausgefuehrt.
+#pragma warning disable CA2012
         Gateway.DisposeAsync().Returns(ValueTask.CompletedTask);
+#pragma warning restore CA2012
     }
 
     public void ResetFaultSignal() => FaultWritten = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -104,7 +110,11 @@ file sealed class HistoryRepositoryHarness
             .Returns(Task.CompletedTask);
         Repository.PruneAsync(Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
+
+        // CA2012: NSubstitute-Konfigurationsaufruf, siehe KnxGatewayHarness oben.
+#pragma warning disable CA2012
         Repository.DisposeAsync().Returns(ValueTask.CompletedTask);
+#pragma warning restore CA2012
     }
 }
 
@@ -142,7 +152,11 @@ public sealed class WorkerTests
     {
         var mqtt = Substitute.For<IMqttOilLevelClient>();
         mqtt.StartAsync(Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        // CA2012: NSubstitute-Konfigurationsaufruf, siehe KnxGatewayHarness oben.
+#pragma warning disable CA2012
         mqtt.DisposeAsync().Returns(ValueTask.CompletedTask);
+#pragma warning restore CA2012
         return mqtt;
     }
 

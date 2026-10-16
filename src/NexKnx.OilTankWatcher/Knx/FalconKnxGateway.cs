@@ -29,7 +29,7 @@ namespace NexKnx.OilTankWatcher.Knx;
 ///     reine ETS-Projektmetadaten (Anzeige/Interpretation der Gruppenadresse)
 ///     und wird nicht mitübertragen.
 /// </summary>
-public sealed class FalconKnxGateway : IKnxGateway
+public sealed partial class FalconKnxGateway : IKnxGateway
 {
     private readonly KnxOptions _options;
     private readonly ILogger<FalconKnxGateway> _logger;
@@ -61,8 +61,7 @@ public sealed class FalconKnxGateway : IKnxGateway
         connectorParameters.AutoReconnect = true;
 
         _bus = new KnxBus(connectorParameters);
-        _bus.ConnectionStateChanged += (_, _) =>
-            _logger.LogInformation("KNX-Verbindungsstatus: {State}", _bus.ConnectionState);
+        _bus.ConnectionStateChanged += (_, _) => LogConnectionStateChanged(_bus.ConnectionState);
     }
 
     private static ConnectorParameters BuildConnectorParameters(KnxOptions options) => options.ConnectionType switch
@@ -81,10 +80,7 @@ public sealed class FalconKnxGateway : IKnxGateway
     public async Task ConnectAsync(CancellationToken cancellationToken)
     {
         await _bus.ConnectAsync(cancellationToken);
-        _logger.LogInformation(
-            "KNX-Bus verbunden ({ConnectionType}), Status: {State}.",
-            _options.ConnectionType,
-            _bus.ConnectionState);
+        LogConnected(_options.ConnectionType, _bus.ConnectionState);
     }
 
     public Task WritePercentAsync(double percent, CancellationToken cancellationToken) =>
@@ -115,4 +111,10 @@ public sealed class FalconKnxGateway : IKnxGateway
     }
 
     public async ValueTask DisposeAsync() => await _bus.DisposeAsync();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "KNX-Verbindungsstatus: {State}")]
+    private partial void LogConnectionStateChanged(BusConnectionState state);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "KNX-Bus verbunden ({ConnectionType}), Status: {State}.")]
+    private partial void LogConnected(KnxConnectionType connectionType, BusConnectionState state);
 }

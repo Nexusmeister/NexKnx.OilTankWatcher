@@ -43,7 +43,12 @@ var host = builder.Build();
 // (z. B. lokaler "dotnet run") bleibt das Attribut leer.
 var version = typeof(Worker).Assembly
     .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-host.Services.GetRequiredService<ILogger<Program>>()
-    .LogInformation("NexKnx.OilTankWatcher Version {Version} startet.", version ?? "unbekannt");
+host.Services.GetRequiredService<ILogger<Program>>().LogStartup(version ?? "unbekannt");
 
-host.Run();
+await host.RunAsync();
+
+internal static partial class ProgramLog
+{
+    [LoggerMessage(Level = LogLevel.Information, Message = "NexKnx.OilTankWatcher Version {Version} startet.")]
+    public static partial void LogStartup(this ILogger logger, string version);
+}
