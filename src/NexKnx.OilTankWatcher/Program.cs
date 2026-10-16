@@ -27,6 +27,10 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<KnxOptions>>(
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<RuntimeEstimationOptions>>().Value);
 
 builder.Services.AddSingleton<MqttOilLevelClient>();
+// Muss dieselbe Singleton-Instanz wie MqttOilLevelClient liefern (nicht per
+// AddSingleton<IMqttOilLevelClient, MqttOilLevelClient>() neu auflösen) - sonst
+// entstünde eine zweite Instanz mit einer zweiten MQTT-Verbindung.
+builder.Services.AddSingleton<IMqttOilLevelClient>(sp => sp.GetRequiredService<MqttOilLevelClient>());
 builder.Services.AddSingleton<IKnxGateway, FalconKnxGateway>();
 builder.Services.AddSingleton<IHistoryRepository>(sp =>
     new SqliteHistoryRepository(sp.GetRequiredService<RuntimeEstimationOptions>().DatabasePath));

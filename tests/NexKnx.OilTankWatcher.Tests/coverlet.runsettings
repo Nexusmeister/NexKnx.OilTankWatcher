@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Code-Coverage-Ausschlüsse für coverlet (via "XPlat Code Coverage"), siehe
+  GitHub-Issue #10. Jede Ausnahme wird einzeln begründet, damit nachvollziehbar
+  bleibt, warum sie nicht zur 80%-Zielabdeckung beitragen muss:
+
+  - NexKnx.OilTankWatcher.Knx.FalconKnxGateway: dünner Adapter direkt über den
+    sealed, nicht mockbaren Knx.Falcon.Sdk.KnxBus; es gibt keine innere
+    Testnaht ohne echte/physische KNX-Hardware - manuell bzw. per
+    Integrationstest gegen reale Hardware verifiziert.
+  - Program (Komposition-Root): Top-Level-Statements ohne Verzweigungslogik,
+    die isoliert betrachtet einen Unit-Test rechtfertigen würde.
+  - NexKnx.OilTankWatcher.ServiceDefaults.Microsoft.Extensions.Hosting.Extensions:
+    unveränderte Standard-.NET-Aspire-ServiceDefaults-Vorlage
+    (OTel-/Health-Check-Verdrahtung).
+  - **/obj/**/*.cs, **/*.g.cs, **/AssemblyInfo.cs: generierter bzw. nicht
+    selbst verfasster Code.
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Exclude>
+            [NexKnx.OilTankWatcher]NexKnx.OilTankWatcher.Knx.FalconKnxGateway,[NexKnx.OilTankWatcher]Program,[NexKnx.OilTankWatcher.ServiceDefaults]Microsoft.Extensions.Hosting.Extensions
+          </Exclude>
+          <ExcludeByFile>
+            **/obj/**/*.cs,**/*.g.cs,**/AssemblyInfo.cs
+          </ExcludeByFile>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
