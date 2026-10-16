@@ -1,0 +1,10 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Zero-Warning-Policy: Compiler-Warnungen sollen den Build genauso
+         zuverlaessig stoppen wie Fehler, damit sie nicht uebersehen oder
+         "weggewartet" werden koennen. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>
