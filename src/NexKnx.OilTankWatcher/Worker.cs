@@ -35,6 +35,7 @@ public sealed class Worker : BackgroundService
 
     private readonly object _stateLock = new();
     private double? _currentSmoothedPercent;
+    private double? _currentRawPercent;
     private DateTimeOffset _lastDailySampleAt = DateTimeOffset.MinValue;
 
     // Made observable for Grafana/Prometheus - the actual bits otherwise
@@ -202,6 +203,7 @@ public sealed class Worker : BackgroundService
         lock (_stateLock)
         {
             _currentSmoothedPercent = smoothed;
+            _currentRawPercent = rawPercent;
         }
 
         if (now - _lastDailySampleAt >= TimeSpan.FromHours(24))
@@ -222,9 +224,11 @@ public sealed class Worker : BackgroundService
         try
         {
             double? smoothed;
+            double? rawPercent;
             lock (_stateLock)
             {
                 smoothed = _currentSmoothedPercent;
+                rawPercent = _currentRawPercent;
             }
 
             var now = DateTimeOffset.UtcNow;
@@ -264,7 +268,7 @@ public sealed class Worker : BackgroundService
 
             _publishGate.MarkSent(now, percent, warning, fault);
 
-            _logger.LogKnxUpdated(percent, liters, warning, fault);
+            _logger.LogKnxUpdated(percent, liters, rawPercent ?? percent, warning, fault);
         }
         catch (Exception ex)
         {
