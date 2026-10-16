@@ -317,7 +317,5 @@ jobs:
           git config user.name "nexknx-ci"
           git config user.email "ci@nexknx.local"
           git add oiltank/docker-compose.yml
-          git commit -m "Bump oiltank-watcher image to ${SHA_TAG}
-
-Automated bump triggered by Nexusmeister/NexKnx.OilTankWatcher@${{ github.sha }}."
+          git commit -m "Bump oiltank-watcher image to ${SHA_TAG}" -m "Automated bump triggered by Nexusmeister/NexKnx.OilTankWatcher@${{ github.sha }}."
           git push
