@@ -95,7 +95,7 @@ public class SqliteHistoryRepositoryTests
 
         await repository.PruneAsync(TimeSpan.FromDays(30), CancellationToken.None);
 
-        // Großes Retention-Fenster, damit wir wirklich alles sehen, was nach dem Prune noch da ist.
+        // Large retention window, so we really see everything that's still there after the prune.
         var result = await repository.LoadRecentAsync(TimeSpan.FromDays(3650), CancellationToken.None);
 
         result.ShouldHaveSingleItem();
@@ -108,7 +108,7 @@ public class SqliteHistoryRepositoryTests
         await using var repository = await CreateInitializedAsync();
         await repository.AppendAsync(new LevelSample(DateTimeOffset.UtcNow, 42), CancellationToken.None);
 
-        // CREATE TABLE IF NOT EXISTS darf beim zweiten Aufruf nichts löschen.
+        // CREATE TABLE IF NOT EXISTS must not delete anything on the second call.
         await repository.InitializeAsync(CancellationToken.None);
 
         var result = await repository.LoadRecentAsync(TimeSpan.FromDays(30), CancellationToken.None);

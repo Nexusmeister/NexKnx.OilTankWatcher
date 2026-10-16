@@ -1,10 +1,10 @@
 namespace NexKnx.OilTankWatcher.Processing;
 
 /// <summary>
-/// Erkennt den Störungsfall "seit mehr als X Stunden kein gültiger Messwert".
-/// Der Referenzzeitpunkt wird beim Start auf den Startzeitpunkt des Dienstes
-/// gesetzt, damit auch ein kompletter Ausfall der Datenquelle seit dem Start
-/// erkannt wird.
+/// Detects the fault condition "no valid reading for more than X hours".
+/// The reference point in time is set to the service's start time at
+/// startup, so a complete failure of the data source since startup is also
+/// detected.
 /// </summary>
 public sealed class FaultDetector
 {

@@ -1,9 +1,10 @@
 namespace NexKnx.OilTankWatcher.Processing;
 
 /// <summary>
-/// Binärer Zustand mit Hysterese: aktiviert bei Unterschreiten/Erreichen der
-/// unteren Schwelle, deaktiviert erst beim Überschreiten der höheren
-/// Rücknahmeschwelle. Verhindert Prellen (Flackern) nahe der Schaltschwelle.
+/// Binary state with hysteresis: activated when the lower threshold is
+/// reached or undercut, only deactivated when the higher recovery
+/// threshold is exceeded. Prevents bouncing (flickering) near the
+/// switching threshold.
 /// </summary>
 public sealed class HysteresisGate
 {
@@ -16,7 +17,7 @@ public sealed class HysteresisGate
         if (releaseAbove <= activateAtOrBelow)
         {
             throw new ArgumentException(
-                "Die Rücknahmeschwelle muss größer als die Aktivierungsschwelle sein (Hysterese-Band).",
+                "The recovery threshold must be greater than the activation threshold (hysteresis band).",
                 nameof(releaseAbove));
         }
 

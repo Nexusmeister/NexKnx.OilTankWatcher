@@ -53,13 +53,13 @@ public class KnxGroupAddressOptionsTests
         var options = new KnxGroupAddressOptions();
 
         options.PercentLevel.ShouldBe("10/3/0");
-        // Hinweis: LitersLevel/RuntimeDays und WarningBit/FaultBit teilen sich
-        // in KnxOptions.cs jeweils dieselbe Default-Gruppenadresse. Das sieht
-        // nach einer vorbestehenden Copy-Paste-Kollision aus, wird hier aber
-        // bewusst nur als aktuelles Verhalten festgehalten (characterization),
-        // nicht "repariert" - eine Änderung der Produktions-Defaults gehört
-        // nicht in dieses Coverage-fokussierte Change. Falls das tatsächlich
-        // unbeabsichtigt ist, sollte dafür ein eigenes Ticket angelegt werden.
+        // Note: LitersLevel/RuntimeDays and WarningBit/FaultBit each share
+        // the same default group address in KnxOptions.cs. This looks like
+        // a pre-existing copy-paste collision, but is deliberately only
+        // captured here as current behavior (characterization), not
+        // "fixed" - changing the production defaults doesn't belong in
+        // this coverage-focused change. If this is indeed unintentional, a
+        // separate ticket should be filed for it.
         options.LitersLevel.ShouldBe("10/3/1");
         options.WarningBit.ShouldBe("10/3/2");
         options.FaultBit.ShouldBe("10/3/2");

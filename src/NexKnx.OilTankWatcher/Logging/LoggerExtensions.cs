@@ -4,29 +4,29 @@ using NexKnx.OilTankWatcher.Configuration;
 namespace NexKnx.OilTankWatcher.Logging;
 
 /// <summary>
-/// Zentrale Sammelstelle fuer alle per [LoggerMessage]-Source-Generator
-/// erzeugten Log-Methoden (CA1873: vermeidet die Argumentauswertung, wenn
-/// der jeweilige Log-Level deaktiviert ist). Als Extension-Methoden auf
-/// ILogger statt pro Klasse verteilter partial-Methoden, damit alle
-/// Log-Message-Templates an einer Stelle zu finden sind.
+/// Central collection point for all log methods generated via the
+/// [LoggerMessage] source generator (CA1873: avoids argument evaluation
+/// when the respective log level is disabled). As extension methods on
+/// ILogger instead of partial methods spread across each class, so all
+/// log message templates can be found in one place.
 /// </summary>
 internal static partial class LoggerExtensions
 {
-    [LoggerMessage(Level = LogLevel.Information, Message = "NexKnx.OilTankWatcher Version {Version} startet.")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "NexKnx.OilTankWatcher version {Version} starting.")]
     public static partial void LogStartup(this ILogger logger, string version);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "{Count} persistierte Historienwerte geladen.")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "{Count} persisted history values loaded.")]
     public static partial void LogHistoryLoaded(this ILogger logger, int count);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "KNX aktualisiert: {Percent:0.0}% ({Liters:0} l), Warnung={Warning}, Störung={Fault}.")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "KNX updated: {Percent:0.0}% ({Liters:0} l), warning={Warning}, fault={Fault}.")]
     public static partial void LogKnxUpdated(this ILogger logger, double percent, double liters, bool warning, bool fault);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "KNX-Verbindungsstatus: {State}")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "KNX connection state: {State}")]
     public static partial void LogKnxConnectionStateChanged(this ILogger logger, BusConnectionState state);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "KNX-Bus verbunden ({ConnectionType}), Status: {State}.")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "KNX bus connected ({ConnectionType}), state: {State}.")]
     public static partial void LogKnxConnected(this ILogger logger, KnxConnectionType connectionType, BusConnectionState state);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "MQTT verbunden mit {Host}:{Port}, Topic '{Topic}'.")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "MQTT connected to {Host}:{Port}, topic '{Topic}'.")]
     public static partial void LogMqttConnected(this ILogger logger, string host, int port, string topic);
 }

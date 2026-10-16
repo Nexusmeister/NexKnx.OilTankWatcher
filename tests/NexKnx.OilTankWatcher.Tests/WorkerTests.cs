@@ -8,11 +8,10 @@ using NexKnx.OilTankWatcher.Processing;
 namespace NexKnx.OilTankWatcher.Tests;
 
 /// <summary>
-/// NSubstitute-Test-Doubles für den <see cref="Worker"/>. Zustand, der sich
-/// mit reinen <c>Received()</c>-Prüfungen nicht abbilden lässt (aufgezeichnete
-/// Schreibvorgänge, ein Fertigstellungs-Signal für asynchrone Auswertungen),
-/// wird über schlanke Harness-Klassen um den jeweiligen Substitute herum
-/// nachgebildet.
+/// NSubstitute test doubles for the <see cref="Worker"/>. State that can't
+/// be modeled with plain <c>Received()</c> checks (recorded writes, a
+/// completion signal for asynchronous evaluations) is reproduced via thin
+/// harness classes wrapped around the respective substitute.
 /// </summary>
 file sealed class KnxGatewayHarness
 {
@@ -25,11 +24,11 @@ file sealed class KnxGatewayHarness
     public List<double> RuntimeDaysWrites { get; } = [];
 
     /// <summary>
-    /// Wird nach jedem <c>WriteFaultAsync</c>-Aufruf signalisiert - der
-    /// letzte Schritt der normalen Auswertungssequenz vor der optionalen
-    /// Restreichweite. Ermöglicht Tests, deterministisch auf den Abschluss
-    /// des per "fire-and-forget" gestarteten <c>EvaluateAndPublishAsync</c>
-    /// zu warten, statt mit einem beliebigen Delay zu raten.
+    /// Signaled after every <c>WriteFaultAsync</c> call - the last step of
+    /// the normal evaluation sequence before the optional remaining
+    /// runtime. Lets tests deterministically wait for the completion of
+    /// the fire-and-forget <c>EvaluateAndPublishAsync</c> instead of
+    /// guessing with an arbitrary delay.
     /// </summary>
     public TaskCompletionSource<bool> FaultWritten { get; private set; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -62,9 +61,8 @@ file sealed class KnxGatewayHarness
         Gateway.WriteRuntimeDaysAsync(Arg.Do<double>(d => RuntimeDaysWrites.Add(d)), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
-        // CA2012: NSubstitute-Konfigurationsaufruf, kein tatsaechlicher
-        // ValueTask-Verbrauch - der Aufruf wird von NSubstitute abgefangen,
-        // nicht wirklich ausgefuehrt.
+        // CA2012: NSubstitute configuration call, not an actual ValueTask
+        // consumption - the call is intercepted by NSubstitute, not really executed.
 #pragma warning disable CA2012
         Gateway.DisposeAsync().Returns(ValueTask.CompletedTask);
 #pragma warning restore CA2012
@@ -120,7 +118,7 @@ file sealed class HistoryRepositoryHarness
         Repository.PruneAsync(Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
-        // CA2012: NSubstitute-Konfigurationsaufruf, siehe KnxGatewayHarness oben.
+        // CA2012: NSubstitute configuration call, see KnxGatewayHarness above.
 #pragma warning disable CA2012
         Repository.DisposeAsync().Returns(ValueTask.CompletedTask);
 #pragma warning restore CA2012
@@ -143,9 +141,9 @@ public sealed class WorkerTests
         WarningThresholdPercent = 25,
         WarningRecoveryPercent = 28,
         FaultAfterHours = 12,
-        // Klein gehalten, damit PublishGate.ShouldPublish beim allerersten
-        // Aufruf (kein _lastSentAt) ohnehin schon true liefert - die Werte
-        // selbst sind daher für die meisten Tests nicht kritisch.
+        // Kept small so PublishGate.ShouldPublish already returns true on
+        // the very first call anyway (no _lastSentAt) - the values
+        // themselves therefore aren't critical for most tests.
         SendIntervalMinutes = 1,
         ChangeThresholdPercent = 0.1,
     };
@@ -162,7 +160,7 @@ public sealed class WorkerTests
         var mqtt = Substitute.For<IMqttOilLevelClient>();
         mqtt.StartAsync(Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
-        // CA2012: NSubstitute-Konfigurationsaufruf, siehe KnxGatewayHarness oben.
+        // CA2012: NSubstitute configuration call, see KnxGatewayHarness above.
 #pragma warning disable CA2012
         mqtt.DisposeAsync().Returns(ValueTask.CompletedTask);
 #pragma warning restore CA2012
@@ -190,11 +188,11 @@ public sealed class WorkerTests
         await Task.WhenAny(signal.Task, Task.Delay(SignalTimeout)) == signal.Task;
 
     /// <summary>
-    /// <c>BackgroundService.StartAsync</c> kehrt zurück, sobald
-    /// <c>ExecuteAsync</c> am ersten "await" angelangt ist - das MQTT-Abo
-    /// (<c>ValueReceived += ...</c>) kann daher noch nicht vollzogen sein.
-    /// Statt eines geratenen Delays wird hier per Retry gewartet, bis der
-    /// Mqtt-Substitute tatsächlich gestartet wurde.
+    /// <c>BackgroundService.StartAsync</c> returns as soon as
+    /// <c>ExecuteAsync</c> has reached its first "await" - the MQTT
+    /// subscription (<c>ValueReceived += ...</c>) may therefore not have
+    /// happened yet. Instead of a guessed delay, this waits via retry
+    /// until the MQTT substitute has actually started.
     /// </summary>
     private static int StartAsyncCallCount(IMqttOilLevelClient mqtt) =>
         mqtt.ReceivedCalls().Count(call => call.GetMethodInfo().Name == nameof(IMqttOilLevelClient.StartAsync));
@@ -207,7 +205,7 @@ public sealed class WorkerTests
             await Task.Delay(10);
         }
 
-        (StartAsyncCallCount(mqtt) > 0).ShouldBeTrue("MqttOilLevelClient.StartAsync wurde nicht innerhalb des Timeouts aufgerufen.");
+        (StartAsyncCallCount(mqtt) > 0).ShouldBeTrue("MqttOilLevelClient.StartAsync was not called within the timeout.");
     }
 
     [Fact]
@@ -223,7 +221,7 @@ public sealed class WorkerTests
 
         RaiseValue(mqtt, 60);
 
-        (await WaitForSignalAsync(knx.FaultWritten)).ShouldBeTrue("Auswertung wurde nicht innerhalb des Timeouts abgeschlossen.");
+        (await WaitForSignalAsync(knx.FaultWritten)).ShouldBeTrue("Evaluation did not complete within the timeout.");
 
         knx.PercentWrites.ShouldHaveSingleItem();
         knx.PercentWrites[0].ShouldBe(60);
@@ -248,17 +246,16 @@ public sealed class WorkerTests
         await worker.StartAsync(CancellationToken.None);
         await WaitUntilMqttStartedAsync(mqtt);
 
-        // Erster Wert etabliert eine Baseline für den PlausibilityFilter.
+        // First value establishes a baseline for the PlausibilityFilter.
         RaiseValue(mqtt, 50);
         (await WaitForSignalAsync(knx.FaultWritten)).ShouldBeTrue();
         knx.ResetFaultSignal();
 
-        // Sprung weit über MaxStepPercent (10) hinaus - muss verworfen werden.
+        // Jump far beyond MaxStepPercent (10) - must be rejected.
         RaiseValue(mqtt, 95);
 
-        // Es gibt kein Erfolgs-Signal, auf das gewartet werden kann - eine
-        // kurze, großzügig bemessene Wartezeit stellt sicher, dass eine
-        // (fälschliche) Auswertung Zeit hätte, aufzulaufen.
+        // There's no success signal to wait on - a short, generously sized
+        // wait ensures a (mistaken) evaluation would have time to show up.
         await Task.Delay(TimeSpan.FromMilliseconds(500));
 
         knx.PercentWrites.ShouldHaveSingleItem();
@@ -282,9 +279,9 @@ public sealed class WorkerTests
         RaiseValue(mqtt, 55);
         (await WaitForSignalAsync(knx.FaultWritten)).ShouldBeTrue();
 
-        // Der zuletzt persistierte Sample ist erst 5 Minuten alt - der
-        // frisch empfangene Messwert darf daher keinen erneuten
-        // Tageswert-Persistiervorgang auslösen.
+        // The last persisted sample is only 5 minutes old - the freshly
+        // received reading must therefore not trigger another daily-value
+        // persistence operation.
         history.AppendedSamples.ShouldBeEmpty();
 
         await worker.StopAsync(CancellationToken.None);
@@ -296,7 +293,7 @@ public sealed class WorkerTests
         var mqtt = CreateMqttSubstitute();
         var knx = new KnxGatewayHarness();
         var history = new HistoryRepositoryHarness(
-            initializeException: new InvalidOperationException("Datenbank nicht erreichbar."));
+            initializeException: new InvalidOperationException("Database unreachable."));
         var worker = CreateWorker(mqtt, knx.Gateway, history.Repository);
 
         await worker.StartAsync(CancellationToken.None);
@@ -311,7 +308,7 @@ public sealed class WorkerTests
         var mqtt = CreateMqttSubstitute();
         var knx = new KnxGatewayHarness();
         var history = new HistoryRepositoryHarness(
-            loadRecentException: new InvalidOperationException("Historie kaputt."));
+            loadRecentException: new InvalidOperationException("History broken."));
         var worker = CreateWorker(mqtt, knx.Gateway, history.Repository);
 
         await worker.StartAsync(CancellationToken.None);
@@ -324,7 +321,7 @@ public sealed class WorkerTests
     public async Task ConnectKnx_Throws_IsSwallowed_ServiceKeepsRunning()
     {
         var mqtt = CreateMqttSubstitute();
-        var knx = new KnxGatewayHarness(connectException: new InvalidOperationException("Bus nicht erreichbar."));
+        var knx = new KnxGatewayHarness(connectException: new InvalidOperationException("Bus unreachable."));
         var history = new HistoryRepositoryHarness();
         var worker = CreateWorker(mqtt, knx.Gateway, history.Repository);
 
@@ -347,8 +344,8 @@ public sealed class WorkerTests
         var knx = new KnxGatewayHarness();
         var now = DateTimeOffset.UtcNow;
         var history = new HistoryRepositoryHarness(
-            // Fallender Verlauf mit genügend Punkten, damit RuntimeEstimator
-            // (MinimumSamples = 3) normalerweise eine Schätzung liefern würde.
+            // Declining series with enough points that RuntimeEstimator
+            // (MinimumSamples = 3) would normally produce an estimate.
             seededSamples:
             [
                 new LevelSample(now.AddDays(-2), 80),
@@ -384,8 +381,8 @@ public sealed class WorkerTests
         await mqtt.Received(1).DisposeAsync();
         await knx.Gateway.Received(1).DisposeAsync();
 
-        // Nach StopAsync wurde der Handler abgemeldet - ein weiterer
-        // "ValueReceived"-Aufruf darf keine KNX-Schreibvorgänge mehr auslösen.
+        // After StopAsync the handler was unsubscribed - another
+        // "ValueReceived" call must no longer trigger any KNX writes.
         RaiseValue(mqtt, 42);
         await Task.Delay(TimeSpan.FromMilliseconds(500));
 
@@ -399,9 +396,9 @@ public sealed class WorkerTests
         var knx = new KnxGatewayHarness();
         var now = DateTimeOffset.UtcNow;
         var history = new HistoryRepositoryHarness(
-            // Fallender Verlauf mit genügend Punkten (MinimumSamples = 3), damit
-            // RuntimeEstimator eine negative Steigung und somit eine Schätzung
-            // liefert - das Gegenstück zu RuntimeEstimationDisabled_...
+            // Declining series with enough points (MinimumSamples = 3) so
+            // RuntimeEstimator produces a negative slope and thus an
+            // estimate - the counterpart to RuntimeEstimationDisabled_...
             seededSamples:
             [
                 new LevelSample(now.AddDays(-2), 80),
@@ -436,8 +433,8 @@ public sealed class WorkerTests
         (await WaitForSignalAsync(knx.FaultWritten)).ShouldBeTrue();
         knx.ResetFaultSignal();
 
-        // Unveränderter Wert innerhalb des Sendeintervalls - PublishGate.ShouldPublish
-        // muss hier false liefern, es darf kein zweiter Schreibvorgang erfolgen.
+        // Unchanged value within the send interval - PublishGate.ShouldPublish
+        // must return false here, no second write may occur.
         RaiseValue(mqtt, 60);
         await Task.Delay(TimeSpan.FromMilliseconds(500));
 
@@ -452,14 +449,14 @@ public sealed class WorkerTests
         var mqtt = CreateMqttSubstitute();
         var knx = new KnxGatewayHarness();
         var history = new HistoryRepositoryHarness(
-            appendException: new InvalidOperationException("Schreibfehler in SQLite."));
+            appendException: new InvalidOperationException("Write error in SQLite."));
         var worker = CreateWorker(mqtt, knx.Gateway, history.Repository);
 
         await worker.StartAsync(CancellationToken.None);
         await WaitUntilMqttStartedAsync(mqtt);
 
-        // Erster Wert löst - da _lastDailySampleAt initial MinValue ist - immer
-        // einen (hier fehlschlagenden) Persistiervorgang aus.
+        // First value always triggers a (here failing) persistence
+        // operation - since _lastDailySampleAt is initially MinValue.
         RaiseValue(mqtt, 60);
         (await WaitForSignalAsync(knx.FaultWritten)).ShouldBeTrue();
         await Task.Delay(TimeSpan.FromMilliseconds(100));
@@ -476,7 +473,7 @@ public sealed class WorkerTests
         var worker = CreateWorker(mqtt, knx.Gateway, history.Repository);
 
         knx.Gateway.WritePercentAsync(Arg.Any<double>(), Arg.Any<CancellationToken>())
-            .Returns(_ => Task.FromException(new InvalidOperationException("KNX-Schreibfehler.")));
+            .Returns(_ => Task.FromException(new InvalidOperationException("KNX write error.")));
 
         await worker.StartAsync(CancellationToken.None);
         await WaitUntilMqttStartedAsync(mqtt);
@@ -484,9 +481,9 @@ public sealed class WorkerTests
         RaiseValue(mqtt, 60);
         await Task.Delay(TimeSpan.FromMilliseconds(500));
 
-        // Kein FaultWritten-Signal, da WriteFaultAsync wegen der Exception bei
-        // WritePercentAsync gar nicht mehr erreicht wird - entscheidend ist,
-        // dass der Fehler abgefangen wurde und der Dienst weiterläuft.
+        // No FaultWritten signal, since WriteFaultAsync is no longer
+        // reached at all because of the exception in WritePercentAsync -
+        // what matters is that the error was caught and the service keeps running.
         knx.FaultWrites.ShouldBeEmpty();
 
         await worker.StopAsync(CancellationToken.None);

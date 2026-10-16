@@ -8,9 +8,9 @@ using NexKnx.OilTankWatcher.Mqtt;
 namespace NexKnx.OilTankWatcher.Tests;
 
 /// <summary>
-/// NSubstitute-Test-Double für MQTTnets <see cref="IMqttClient"/> - selbst ein
-/// von der Bibliothek bereitgestelltes Interface und daher ohne eigene
-/// Testnaht fakebar (siehe interner Konstruktor von
+/// NSubstitute test double for MQTTnet's <see cref="IMqttClient"/> - itself
+/// an interface provided by the library and therefore fakeable without its
+/// own test seam (see the internal constructor of
 /// <see cref="MqttOilLevelClient"/>).
 /// </summary>
 file sealed class MqttClientHarness
@@ -27,12 +27,12 @@ file sealed class MqttClientHarness
     public int DisconnectCalls => _disconnectCalls;
 
     /// <summary>
-    /// Wirft bei den ersten N Aufrufen von <c>ConnectAsync</c> die
-    /// konfigurierte Exception, bevor ein Erfolg simuliert wird.
+    /// Throws the configured exception on the first N calls to
+    /// <c>ConnectAsync</c>, before simulating success.
     /// </summary>
     public int FailuresBeforeSuccess { get; set; }
 
-    public Exception ConnectException { get; set; } = new InvalidOperationException("Simulierter Verbindungsfehler.");
+    public Exception ConnectException { get; set; } = new InvalidOperationException("Simulated connection error.");
 
     public MqttClientHarness()
     {
@@ -102,7 +102,7 @@ public class MqttOilLevelClientTests
         Port = 1883,
         Topic = "oiltank/test",
         ClientId = "test-client",
-        // Minimal gehalten, damit Backoff-Wartezeiten im Test nicht spürbar sind.
+        // Kept minimal so backoff wait times aren't noticeable in the test.
         ReconnectDelaySeconds = 0,
         MaxReconnectDelaySeconds = 0,
     };
@@ -134,14 +134,14 @@ public class MqttOilLevelClientTests
     [Fact]
     public async Task StartAsync_StopsRetrying_WhenAlreadyCancelled()
     {
-        // Hinweis: Ein Abbruch, der genau während des "await Task.Delay(...)"
-        // innerhalb der catch-Klausel von ConnectWithRetryAsync eintrifft,
-        // wird von der vorhandenen Implementierung NICHT abgefangen (der
-        // umgebende "catch (OperationCanceledException)" deckt nur den
-        // try-Block ab, nicht den Delay-Aufruf innerhalb des ersten catch-
-        // Blocks) - ein vorbestehendes, hier nicht behobenes Verhalten.
-        // Dieser Test prüft daher den unkritischen Fall: der Token ist schon
-        // vor dem ersten Verbindungsversuch abgebrochen.
+        // Note: a cancellation that arrives exactly during the
+        // "await Task.Delay(...)" inside the catch clause of
+        // ConnectWithRetryAsync is NOT caught by the existing
+        // implementation (the surrounding "catch (OperationCanceledException)"
+        // only covers the try block, not the delay call inside the first
+        // catch block) - a pre-existing behavior not fixed here. This test
+        // therefore checks the uncritical case: the token is already
+        // cancelled before the first connection attempt.
         var harness = new MqttClientHarness { FailuresBeforeSuccess = int.MaxValue };
         var client = new MqttOilLevelClient(CreateOptions(), NullLogger<MqttOilLevelClient>.Instance, harness.Client);
         using var cts = new CancellationTokenSource();
@@ -232,9 +232,9 @@ public class MqttOilLevelClientTests
     [Fact]
     public void Constructor_WithRealMqttClientFactory_DoesNotThrow()
     {
-        // Deckt den öffentlichen, von der DI verwendeten Konstruktor ab, der
-        // einen echten MQTTnet-Client per MqttClientFactory erzeugt - dabei
-        // wird noch keine Netzwerkverbindung aufgebaut (erst StartAsync tut das).
+        // Covers the public constructor used by DI, which creates a real
+        // MQTTnet client via MqttClientFactory - no network connection is
+        // established yet (only StartAsync does that).
         Should.NotThrow(() => new MqttOilLevelClient(CreateOptions(), NullLogger<MqttOilLevelClient>.Instance));
     }
 
@@ -259,11 +259,11 @@ public class MqttOilLevelClientTests
         var harness = new MqttClientHarness();
         using var cts = new CancellationTokenSource();
 
-        // Simuliert eine Abbruchanforderung, die genau während eines laufenden
-        // ConnectAsync-Aufrufs eintrifft: der Token ist zum Zeitpunkt des Catch
-        // bereits abgebrochen, wodurch nicht die allgemeine Fehlerbehandlung
-        // (Backoff/Retry) greift, sondern der eigene OperationCanceledException-
-        // Catch-Block.
+        // Simulates a cancellation request that arrives exactly during an
+        // in-flight ConnectAsync call: by the time of the catch, the token
+        // is already cancelled, so instead of the general error handling
+        // (backoff/retry), the dedicated OperationCanceledException catch
+        // block kicks in.
         Func<NSubstitute.Core.CallInfo, Task<MqttClientConnectResult>> cancelDuringConnect = _ =>
         {
             cts.Cancel();

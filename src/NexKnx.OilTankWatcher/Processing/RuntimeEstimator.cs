@@ -1,10 +1,10 @@
 namespace NexKnx.OilTankWatcher.Processing;
 
 /// <summary>
-/// Schätzt die verbleibende Reichweite in Tagen per linearer Regression
-/// (Methode der kleinsten Quadrate) über die Füllstandshistorie. Liefert
-/// null, wenn zu wenige Messpunkte vorliegen oder der Füllstand nicht fällt
-/// (z. B. kurz nach einer Befüllung).
+/// Estimates the remaining runtime in days via linear regression (least
+/// squares method) over the fill-level history. Returns null if there are
+/// too few data points or the fill level isn't dropping (e.g. shortly
+/// after a refill).
 /// </summary>
 public static class RuntimeEstimator
 {
@@ -31,12 +31,12 @@ public static class RuntimeEstimator
             return null;
         }
 
-        // Steigung der Ausgleichsgeraden in Prozentpunkten pro Tag.
+        // Slope of the regression line in percentage points per day.
         var slopePerDay = (n * sumXY - sumX * sumY) / denominator;
         if (slopePerDay >= -1e-6)
         {
-            // Füllstand steigt oder stagniert (z. B. nach einer Befüllung) -
-            // eine Restreichweite ist in diesem Fall nicht sinnvoll definiert.
+            // Fill level is rising or stagnant (e.g. after a refill) - a
+            // remaining runtime isn't meaningfully defined in this case.
             return null;
         }
 

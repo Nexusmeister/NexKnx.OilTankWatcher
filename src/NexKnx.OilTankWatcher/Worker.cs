@@ -9,11 +9,11 @@ using NexKnx.OilTankWatcher.Processing;
 namespace NexKnx.OilTankWatcher;
 
 /// <summary>
-/// Orchestriert den Datenfluss MQTT -> Plausibilitätsprüfung -> Glättung ->
-/// Hysterese/Störungserkennung -> KNX. Neue Messwerte lösen sofort eine
-/// Auswertung aus; ein 1-Minuten-Timer sorgt zusätzlich für die zyklische
-/// Auswertung (Störungs-Timeout, periodisches Resend), auch wenn gerade
-/// keine neuen MQTT-Nachrichten eintreffen.
+/// Orchestrates the data flow MQTT -> plausibility check -> smoothing ->
+/// hysteresis/fault detection -> KNX. New readings immediately trigger an
+/// evaluation; a 1-minute timer additionally takes care of the cyclic
+/// evaluation (fault timeout, periodic resend), even when no new MQTT
+/// messages are currently arriving.
 /// </summary>
 public sealed class Worker : BackgroundService
 {
@@ -37,8 +37,8 @@ public sealed class Worker : BackgroundService
     private double? _currentSmoothedPercent;
     private DateTimeOffset _lastDailySampleAt = DateTimeOffset.MinValue;
 
-    // Fuer Grafana/Prometheus beobachtbar machen - die eigentlichen Bits
-    // gehen sonst nur auf den KNX-Bus und sind von aussen nicht abfragbar.
+    // Made observable for Grafana/Prometheus - the actual bits otherwise
+    // only go onto the KNX bus and can't be queried from the outside.
     private readonly Meter _meter = new("NexKnx.OilTankWatcher");
     private int _warningActive;
     private int _faultActive;
@@ -70,16 +70,16 @@ public sealed class Worker : BackgroundService
         _meter.CreateObservableGauge(
             "oiltank_warning_active",
             () => Volatile.Read(ref _warningActive),
-            description: "1 wenn der Warnschwellenwert aktuell unterschritten ist, sonst 0.");
+            description: "1 if the warning threshold is currently undercut, otherwise 0.");
         _meter.CreateObservableGauge(
             "oiltank_fault_active",
             () => Volatile.Read(ref _faultActive),
-            description: "1 wenn aktuell eine Stoerung (zu lange kein gueltiger Messwert) vorliegt, sonst 0.");
+            description: "1 if a fault (no valid reading for too long) is currently present, otherwise 0.");
         _meter.CreateObservableGauge(
             "oiltank_level_percent",
             GetCurrentSmoothedPercentMeasurements,
             unit: "%",
-            description: "Aktueller gefilterter/geglätteter Füllstand in Prozent.");
+            description: "Current filtered/smoothed fill level in percent.");
     }
 
     private IEnumerable<Measurement<double>> GetCurrentSmoothedPercentMeasurements()
@@ -90,8 +90,8 @@ public sealed class Worker : BackgroundService
             smoothed = _currentSmoothedPercent;
         }
 
-        // Noch kein gueltiger Messwert seit Start des Dienstes - keine Messung
-        // melden statt einen irrefuehrenden 0%-Wert.
+        // No valid reading since the service started yet - report no
+        // measurement instead of a misleading 0% value.
         if (smoothed is null)
         {
             yield break;
@@ -118,20 +118,20 @@ public sealed class Worker : BackgroundService
         }
         catch (OperationCanceledException)
         {
-            // Normales Beenden über den Shutdown-Token.
+            // Normal shutdown via the shutdown token.
         }
     }
 
     private async Task ConnectKnxAsync(CancellationToken cancellationToken)
     {
-        // Nur EIN initialer Verbindungsversuch: ConnectorParameters.AutoReconnect
-        // (siehe FalconKnxGateway) übernimmt alle weiteren Verbindungs- und
-        // Wiederverbindungsversuche intern im Hintergrund. Ein eigener
-        // manueller Retry-Loop um ConnectAsync kollidiert damit - der Bus
-        // wechselt nach einem fehlgeschlagenen ersten Versuch bereits intern
-        // in einen "Connecting"-Zustand, ein zweiter manueller ConnectAsync-
-        // Aufruf wirft dann "InvalidOperationException: Bus object already
-        // connected" (im Docker-Test real reproduziert).
+        // Only ONE initial connection attempt: ConnectorParameters.AutoReconnect
+        // (see FalconKnxGateway) takes over all further connection and
+        // reconnection attempts internally in the background. A separate
+        // manual retry loop around ConnectAsync collides with that - after a
+        // failed first attempt the bus already switches internally into a
+        // "Connecting" state, a second manual ConnectAsync call then throws
+        // "InvalidOperationException: Bus object already connected"
+        // (reproduced for real in a Docker test).
         try
         {
             await _knxGateway.ConnectAsync(cancellationToken);
@@ -140,7 +140,7 @@ public sealed class Worker : BackgroundService
         {
             _logger.LogWarning(
                 ex,
-                "Erste KNX-Verbindung fehlgeschlagen. AutoReconnect übernimmt weitere Versuche im Hintergrund.");
+                "Initial KNX connection failed. AutoReconnect will take over further attempts in the background.");
         }
     }
 
@@ -160,9 +160,9 @@ public sealed class Worker : BackgroundService
 
             if (persisted.Count > 0)
             {
-                // Verhindert, dass direkt nach einem Neustart erneut ein
-                // Tageswert aufgezeichnet wird, wenn der zuletzt persistierte
-                // Wert noch nicht 24h alt ist.
+                // Prevents a new daily value from being recorded again right
+                // after a restart, when the last persisted value isn't yet
+                // 24h old.
                 _lastDailySampleAt = persisted[^1].Timestamp;
             }
 
@@ -170,7 +170,7 @@ public sealed class Worker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Persistierte Historie konnte nicht geladen werden - starte mit leerer Historie.");
+            _logger.LogWarning(ex, "Persisted history could not be loaded - starting with an empty history.");
         }
     }
 
@@ -183,7 +183,7 @@ public sealed class Worker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Historienwert konnte nicht in SQLite persistiert werden.");
+            _logger.LogWarning(ex, "History value could not be persisted to SQLite.");
         }
     }
 
@@ -191,7 +191,7 @@ public sealed class Worker : BackgroundService
     {
         if (!_plausibilityFilter.TryAccept(rawPercent, out var rejectReason))
         {
-            _logger.LogWarning("Messwert verworfen: {Reason}", rejectReason);
+            _logger.LogWarning("Reading rejected: {Reason}", rejectReason);
             return;
         }
 
@@ -212,7 +212,7 @@ public sealed class Worker : BackgroundService
             _ = PersistSampleAsync(sample);
         }
 
-        // Sofort-Auswertung bei neuem Messwert, nicht auf den Minuten-Timer warten.
+        // Immediate evaluation on a new reading, don't wait for the minute timer.
         _ = EvaluateAndPublishAsync(CancellationToken.None);
     }
 
@@ -233,7 +233,7 @@ public sealed class Worker : BackgroundService
 
             if (smoothed is null)
             {
-                // Noch kein gültiger Messwert seit Start des Dienstes.
+                // No valid reading since the service started yet.
                 return;
             }
 
@@ -268,7 +268,7 @@ public sealed class Worker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unerwarteter Fehler bei der Auswertung/Veröffentlichung.");
+            _logger.LogError(ex, "Unexpected error during evaluation/publishing.");
         }
         finally
         {

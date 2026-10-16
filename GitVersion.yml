@@ -1,7 +1,6 @@
-# Jeder Commit auf main erhaelt automatisch eine neue, vollwertige SemVer-
-# Versionsnummer (kein Pre-Release-Suffix) - ohne dass dafuer manuell ein
-# Git-Tag gesetzt werden muss. Die erste Version wird durch den Tag v0.1.0
-# festgelegt; danach erhoeht GitVersion den Patch-Teil automatisch pro
-# Commit auf main (siehe GitVersion-Doku, Branch-Default fuer main:
-# increment: Patch).
+# Every commit on main automatically gets a new, full SemVer version number
+# (no pre-release suffix) - without having to manually set a Git tag for it.
+# The first version is fixed by the tag v0.1.0; after that GitVersion
+# automatically increments the patch part per commit on main (see the
+# GitVersion docs, branch default for main: increment: Patch).
 mode: ContinuousDeployment

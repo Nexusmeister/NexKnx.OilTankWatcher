@@ -31,7 +31,7 @@ public class RuntimeEstimatorTests
             new LevelSample(start.AddDays(20), 60),
         };
 
-        // Steigung: -1 Prozentpunkt/Tag, aktueller Wert 60% -> 60 Tage Restreichweite.
+        // Slope: -1 percentage point/day, current value 60% -> 60 days remaining runtime.
         var result = RuntimeEstimator.EstimateDaysRemaining(samples, minimumSamples: 5);
 
         result.ShouldNotBeNull();

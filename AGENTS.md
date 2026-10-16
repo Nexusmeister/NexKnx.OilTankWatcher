@@ -106,10 +106,10 @@ step outside this repo's CI.
 
 ## Conventions
 
-- **Commit messages and PR descriptions are written in German**, matching
-  the existing history — keep new ones consistent with that.
-- Comments in source code are also predominantly German; match the
-  surrounding file's language rather than switching mid-file.
+- **Everything is English-only** (code, comments, commit messages, PR
+  descriptions, docs, CI step names): the repo was originally written in
+  German and was fully converted to English (see issue #14) — don't
+  reintroduce German text in new work.
 - Keep configuration changes backward compatible with
   `docker-compose.yml`/`appsettings.json` conventions (`__` as the nesting
   separator for env vars).
