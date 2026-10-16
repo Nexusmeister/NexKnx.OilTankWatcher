@@ -21,6 +21,10 @@
     <DataCollectors>
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
+          <!-- opencover zusaetzlich zu cobertura, siehe GitHub-Issue #20:
+               SonarCloud liest fuer C# nur opencover/dotCover/VS-Coverage,
+               kein cobertura (das ReportGenerator weiterhin nutzt). -->
+          <Format>cobertura,opencover</Format>
           <Exclude>
             [NexKnx.OilTankWatcher]NexKnx.OilTankWatcher.Knx.FalconKnxGateway,[NexKnx.OilTankWatcher]Program,[NexKnx.OilTankWatcher.ServiceDefaults]Microsoft.Extensions.Hosting.Extensions
           </Exclude>

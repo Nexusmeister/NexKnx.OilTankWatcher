@@ -128,6 +128,81 @@ jobs:
           cat trivy-dependencies.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
+  sonarcloud:
+    name: SonarCloud-Analyse
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v7
+        with:
+          # SonarCloud braucht die volle Historie fuer Blame-Informationen.
+          fetch-depth: 0
+
+      - name: .NET SDK einrichten
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: JDK einrichten (fuer den SonarScanner)
+        uses: actions/setup-java@v5
+        with:
+          java-version: 21
+          distribution: "zulu"
+
+      - name: SonarScanner-Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: SonarScanner installieren
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: GitVersion einrichten
+        uses: gittools/actions/gitversion/setup@v4
+        with:
+          versionSpec: "6.x"
+
+      - name: Version aus Git-Historie ermitteln
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4
+
+      - name: SonarScanner-Analyse starten
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: >-
+          dotnet-sonarscanner begin
+          /k:"Nexusmeister_NexKnx.OilTankWatcher"
+          /o:"nexusmeister"
+          /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+
+      - name: Wiederherstellen
+        run: dotnet restore
+
+      - name: Bauen
+        run: >-
+          dotnet build --configuration Release --no-restore
+          -p:Version=${{ steps.gitversion.outputs.semVer }}
+          -p:InformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
+
+      - name: Testen (fuer Coverage-Daten)
+        run: >-
+          dotnet test --configuration Release --no-build
+          --collect:"XPlat Code Coverage"
+          --settings tests/NexKnx.OilTankWatcher.Tests/coverlet.runsettings
+          --results-directory ./coverage
+
+      - name: SonarScanner-Analyse abschliessen
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: >-
+          dotnet-sonarscanner end
+          /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
   docker:
     name: Docker Image bauen, scannen & veroeffentlichen
     needs: build-test
