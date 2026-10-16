@@ -15,8 +15,8 @@ public class PlausibilityFilterTests
 
         var accepted = filter.TryAccept(raw, out var reason);
 
-        Assert.False(accepted);
-        Assert.NotNull(reason);
+        accepted.ShouldBeFalse();
+        reason.ShouldNotBeNull();
     }
 
     [Theory]
@@ -29,9 +29,9 @@ public class PlausibilityFilterTests
 
         var accepted = filter.TryAccept(raw, out var reason);
 
-        Assert.True(accepted);
-        Assert.Null(reason);
-        Assert.Equal(raw, filter.LastAccepted);
+        accepted.ShouldBeTrue();
+        reason.ShouldBeNull();
+        filter.LastAccepted.ShouldBe(raw);
     }
 
     [Fact]
@@ -42,9 +42,9 @@ public class PlausibilityFilterTests
 
         var accepted = filter.TryAccept(55, out var reason);
 
-        Assert.True(accepted);
-        Assert.Null(reason);
-        Assert.Equal(55, filter.LastAccepted);
+        accepted.ShouldBeTrue();
+        reason.ShouldBeNull();
+        filter.LastAccepted.ShouldBe(55);
     }
 
     [Fact]
@@ -55,11 +55,11 @@ public class PlausibilityFilterTests
 
         var accepted = filter.TryAccept(55.1, out var reason);
 
-        Assert.False(accepted);
-        Assert.NotNull(reason);
+        accepted.ShouldBeFalse();
+        reason.ShouldNotBeNull();
         // Zuletzt akzeptierter Wert bleibt unverändert, der Ausreißer darf
         // die Referenz für zukünftige Prüfungen nicht verfälschen.
-        Assert.Equal(50, filter.LastAccepted);
+        filter.LastAccepted.ShouldBe(50);
     }
 
     [Fact]
@@ -70,8 +70,8 @@ public class PlausibilityFilterTests
 
         var accepted = filter.TryAccept(40, out var reason);
 
-        Assert.False(accepted);
-        Assert.NotNull(reason);
+        accepted.ShouldBeFalse();
+        reason.ShouldNotBeNull();
     }
 
     [Fact]
@@ -79,18 +79,18 @@ public class PlausibilityFilterTests
     {
         var filter = new PlausibilityFilter(maxStepPercent: 5);
 
-        Assert.True(filter.TryAccept(80, out _));
-        Assert.True(filter.TryAccept(76, out _));
-        Assert.True(filter.TryAccept(72, out _));
-        Assert.True(filter.TryAccept(68, out _));
+        filter.TryAccept(80, out _).ShouldBeTrue();
+        filter.TryAccept(76, out _).ShouldBeTrue();
+        filter.TryAccept(72, out _).ShouldBeTrue();
+        filter.TryAccept(68, out _).ShouldBeTrue();
 
-        Assert.Equal(68, filter.LastAccepted);
+        filter.LastAccepted.ShouldBe(68);
     }
 
     [Fact]
     public void Constructor_ThrowsForNonPositiveMaxStep()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new PlausibilityFilter(0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new PlausibilityFilter(-1));
+        Should.Throw<ArgumentOutOfRangeException>(() => new PlausibilityFilter(0));
+        Should.Throw<ArgumentOutOfRangeException>(() => new PlausibilityFilter(-1));
     }
 }

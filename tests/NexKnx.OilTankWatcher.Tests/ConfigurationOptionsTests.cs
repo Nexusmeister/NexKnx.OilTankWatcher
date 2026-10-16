@@ -9,15 +9,15 @@ public class KnxOptionsTests
     {
         var options = new KnxOptions();
 
-        Assert.Equal(KnxConnectionType.Tunneling, options.ConnectionType);
-        Assert.NotNull(options.Tunneling);
-        Assert.NotNull(options.Routing);
-        Assert.NotNull(options.GroupAddresses);
-        Assert.Equal(25, options.WarningThresholdPercent);
-        Assert.Equal(28, options.WarningRecoveryPercent);
-        Assert.Equal(12, options.FaultAfterHours);
-        Assert.Equal(10, options.SendIntervalMinutes);
-        Assert.Equal(0.5, options.ChangeThresholdPercent);
+        options.ConnectionType.ShouldBe(KnxConnectionType.Tunneling);
+        options.Tunneling.ShouldNotBeNull();
+        options.Routing.ShouldNotBeNull();
+        options.GroupAddresses.ShouldNotBeNull();
+        options.WarningThresholdPercent.ShouldBe(25);
+        options.WarningRecoveryPercent.ShouldBe(28);
+        options.FaultAfterHours.ShouldBe(12);
+        options.SendIntervalMinutes.ShouldBe(10);
+        options.ChangeThresholdPercent.ShouldBe(0.5);
     }
 }
 
@@ -28,9 +28,9 @@ public class KnxTunnelingOptionsTests
     {
         var options = new KnxTunnelingOptions();
 
-        Assert.Equal("192.168.178.21", options.Host);
-        Assert.Equal(3671, options.Port);
-        Assert.False(options.UseNat);
+        options.Host.ShouldBe("192.168.178.21");
+        options.Port.ShouldBe(3671);
+        options.UseNat.ShouldBeFalse();
     }
 }
 
@@ -41,7 +41,7 @@ public class KnxRoutingOptionsTests
     {
         var options = new KnxRoutingOptions();
 
-        Assert.Equal("224.0.23.12", options.MulticastAddress);
+        options.MulticastAddress.ShouldBe("224.0.23.12");
     }
 }
 
@@ -52,7 +52,7 @@ public class KnxGroupAddressOptionsTests
     {
         var options = new KnxGroupAddressOptions();
 
-        Assert.Equal("10/3/0", options.PercentLevel);
+        options.PercentLevel.ShouldBe("10/3/0");
         // Hinweis: LitersLevel/RuntimeDays und WarningBit/FaultBit teilen sich
         // in KnxOptions.cs jeweils dieselbe Default-Gruppenadresse. Das sieht
         // nach einer vorbestehenden Copy-Paste-Kollision aus, wird hier aber
@@ -60,10 +60,10 @@ public class KnxGroupAddressOptionsTests
         // nicht "repariert" - eine Änderung der Produktions-Defaults gehört
         // nicht in dieses Coverage-fokussierte Change. Falls das tatsächlich
         // unbeabsichtigt ist, sollte dafür ein eigenes Ticket angelegt werden.
-        Assert.Equal("10/3/1", options.LitersLevel);
-        Assert.Equal("10/3/2", options.WarningBit);
-        Assert.Equal("10/3/2", options.FaultBit);
-        Assert.Equal("10/3/1", options.RuntimeDays);
+        options.LitersLevel.ShouldBe("10/3/1");
+        options.WarningBit.ShouldBe("10/3/2");
+        options.FaultBit.ShouldBe("10/3/2");
+        options.RuntimeDays.ShouldBe("10/3/1");
     }
 }
 
@@ -74,14 +74,14 @@ public class MqttOptionsTests
     {
         var options = new MqttOptions();
 
-        Assert.Equal("localhost", options.Host);
-        Assert.Equal(1883, options.Port);
-        Assert.Equal("oiltank/main/value", options.Topic);
-        Assert.Equal("oiltank-knx-bridge", options.ClientId);
-        Assert.Null(options.Username);
-        Assert.Null(options.Password);
-        Assert.Equal(5, options.ReconnectDelaySeconds);
-        Assert.Equal(60, options.MaxReconnectDelaySeconds);
+        options.Host.ShouldBe("localhost");
+        options.Port.ShouldBe(1883);
+        options.Topic.ShouldBe("oiltank/main/value");
+        options.ClientId.ShouldBe("oiltank-knx-bridge");
+        options.Username.ShouldBeNull();
+        options.Password.ShouldBeNull();
+        options.ReconnectDelaySeconds.ShouldBe(5);
+        options.MaxReconnectDelaySeconds.ShouldBe(60);
     }
 }
 
@@ -92,9 +92,9 @@ public class TankOptionsTests
     {
         var options = new TankOptions();
 
-        Assert.Equal(9100, options.NominalVolumeLiters);
-        Assert.Equal(5, options.MaxStepPercent);
-        Assert.Equal(5, options.MedianWindowSize);
+        options.NominalVolumeLiters.ShouldBe(9100);
+        options.MaxStepPercent.ShouldBe(5);
+        options.MedianWindowSize.ShouldBe(5);
     }
 }
 
@@ -105,9 +105,9 @@ public class RuntimeEstimationOptionsTests
     {
         var options = new RuntimeEstimationOptions();
 
-        Assert.True(options.Enabled);
-        Assert.Equal(30, options.HistoryDays);
-        Assert.Equal(5, options.MinimumSamples);
-        Assert.Equal("history.db", options.DatabasePath);
+        options.Enabled.ShouldBeTrue();
+        options.HistoryDays.ShouldBe(30);
+        options.MinimumSamples.ShouldBe(5);
+        options.DatabasePath.ShouldBe("history.db");
     }
 }

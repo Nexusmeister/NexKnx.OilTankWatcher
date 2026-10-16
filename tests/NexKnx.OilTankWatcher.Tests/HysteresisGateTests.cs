@@ -11,8 +11,8 @@ public class HysteresisGateTests
 
         var result = gate.Update(30);
 
-        Assert.False(result);
-        Assert.False(gate.IsActive);
+        result.ShouldBeFalse();
+        gate.IsActive.ShouldBeFalse();
     }
 
     [Fact]
@@ -22,8 +22,8 @@ public class HysteresisGateTests
 
         var result = gate.Update(25);
 
-        Assert.True(result);
-        Assert.True(gate.IsActive);
+        result.ShouldBeTrue();
+        gate.IsActive.ShouldBeTrue();
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class HysteresisGateTests
         // 26% liegt zwischen den Schwellen - Warnung darf noch nicht zurückgenommen werden.
         var result = gate.Update(26);
 
-        Assert.True(result);
+        result.ShouldBeTrue();
     }
 
     [Fact]
@@ -47,8 +47,8 @@ public class HysteresisGateTests
         var stillActive = gate.Update(28); // genau auf der Schwelle - noch nicht zurückgenommen
         var released = gate.Update(28.1);
 
-        Assert.True(stillActive);
-        Assert.False(released);
+        stillActive.ShouldBeTrue();
+        released.ShouldBeFalse();
     }
 
     [Fact]
@@ -59,13 +59,13 @@ public class HysteresisGateTests
         gate.Update(24); // aktiviert
         var afterSmallRise = gate.Update(26); // über Aktivierungsschwelle, aber unter Rücknahmeschwelle
 
-        Assert.True(afterSmallRise, "Ohne Hysterese würde hier sofort wieder deaktiviert - das ist unerwünscht.");
+        afterSmallRise.ShouldBeTrue("Ohne Hysterese würde hier sofort wieder deaktiviert - das ist unerwünscht.");
     }
 
     [Fact]
     public void Constructor_ThrowsWhenReleaseThresholdNotAboveActivationThreshold()
     {
-        Assert.Throws<ArgumentException>(() => new HysteresisGate(activateAtOrBelow: 25, releaseAbove: 25));
-        Assert.Throws<ArgumentException>(() => new HysteresisGate(activateAtOrBelow: 25, releaseAbove: 20));
+        Should.Throw<ArgumentException>(() => new HysteresisGate(activateAtOrBelow: 25, releaseAbove: 25));
+        Should.Throw<ArgumentException>(() => new HysteresisGate(activateAtOrBelow: 25, releaseAbove: 20));
     }
 }

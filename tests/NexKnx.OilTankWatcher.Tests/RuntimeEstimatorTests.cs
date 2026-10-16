@@ -15,7 +15,7 @@ public class RuntimeEstimatorTests
 
         var result = RuntimeEstimator.EstimateDaysRemaining(samples, minimumSamples: 5);
 
-        Assert.Null(result);
+        result.ShouldBeNull();
     }
 
     [Fact]
@@ -34,8 +34,8 @@ public class RuntimeEstimatorTests
         // Steigung: -1 Prozentpunkt/Tag, aktueller Wert 60% -> 60 Tage Restreichweite.
         var result = RuntimeEstimator.EstimateDaysRemaining(samples, minimumSamples: 5);
 
-        Assert.NotNull(result);
-        Assert.Equal(60, result!.Value, precision: 3);
+        result.ShouldNotBeNull();
+        result!.Value.ShouldBe(60, 0.001);
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public class RuntimeEstimatorTests
 
         var result = RuntimeEstimator.EstimateDaysRemaining(samples, minimumSamples: 5);
 
-        Assert.Null(result);
+        result.ShouldBeNull();
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class RuntimeEstimatorTests
 
         var result = RuntimeEstimator.EstimateDaysRemaining(samples, minimumSamples: 5);
 
-        Assert.Null(result);
+        result.ShouldBeNull();
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public class RuntimeEstimatorTests
 
         var result = RuntimeEstimator.EstimateDaysRemaining(samples, minimumSamples: 5);
 
-        Assert.NotNull(result);
-        Assert.True(result!.Value >= 0);
+        result.ShouldNotBeNull();
+        result!.Value.ShouldBeGreaterThanOrEqualTo(0);
     }
 }

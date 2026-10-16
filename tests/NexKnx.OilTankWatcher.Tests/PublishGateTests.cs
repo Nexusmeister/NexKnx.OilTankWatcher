@@ -10,7 +10,7 @@ public class PublishGateTests
         var gate = new PublishGate(TimeSpan.FromMinutes(10), changeThresholdPercent: 0.5);
         var now = DateTimeOffset.UtcNow;
 
-        Assert.True(gate.ShouldPublish(now, 50, warning: false, fault: false));
+        gate.ShouldPublish(now, 50, warning: false, fault: false).ShouldBeTrue();
     }
 
     [Fact]
@@ -22,7 +22,7 @@ public class PublishGateTests
 
         var result = gate.ShouldPublish(now.AddMinutes(1), 50.1, warning: false, fault: false);
 
-        Assert.False(result);
+        result.ShouldBeFalse();
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public class PublishGateTests
 
         var result = gate.ShouldPublish(now.AddSeconds(1), 50.6, warning: false, fault: false);
 
-        Assert.True(result);
+        result.ShouldBeTrue();
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class PublishGateTests
 
         var result = gate.ShouldPublish(now.AddMinutes(10), 50, warning: false, fault: false);
 
-        Assert.True(result);
+        result.ShouldBeTrue();
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class PublishGateTests
 
         var result = gate.ShouldPublish(now.AddSeconds(1), 50, warning: true, fault: false);
 
-        Assert.True(result);
+        result.ShouldBeTrue();
     }
 
     [Fact]
@@ -70,6 +70,6 @@ public class PublishGateTests
 
         var result = gate.ShouldPublish(now.AddSeconds(1), 50, warning: false, fault: true);
 
-        Assert.True(result);
+        result.ShouldBeTrue();
     }
 }

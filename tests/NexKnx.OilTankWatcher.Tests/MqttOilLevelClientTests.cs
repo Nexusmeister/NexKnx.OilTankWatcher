@@ -115,8 +115,8 @@ public class MqttOilLevelClientTests
 
         await client.StartAsync(CancellationToken.None);
 
-        Assert.Equal(1, harness.ConnectCalls);
-        Assert.Equal(1, harness.SubscribeCalls);
+        harness.ConnectCalls.ShouldBe(1);
+        harness.SubscribeCalls.ShouldBe(1);
     }
 
     [Fact]
@@ -127,8 +127,8 @@ public class MqttOilLevelClientTests
 
         await client.StartAsync(CancellationToken.None);
 
-        Assert.Equal(4, harness.ConnectCalls);
-        Assert.Equal(1, harness.SubscribeCalls);
+        harness.ConnectCalls.ShouldBe(4);
+        harness.SubscribeCalls.ShouldBe(1);
     }
 
     [Fact]
@@ -149,8 +149,8 @@ public class MqttOilLevelClientTests
 
         await client.StartAsync(cts.Token);
 
-        Assert.Equal(0, harness.ConnectCalls);
-        Assert.Equal(0, harness.SubscribeCalls);
+        harness.ConnectCalls.ShouldBe(0);
+        harness.SubscribeCalls.ShouldBe(0);
     }
 
     [Fact]
@@ -164,7 +164,7 @@ public class MqttOilLevelClientTests
         await client.StartAsync(CancellationToken.None);
         harness.RaiseMessageReceived("oiltank/test", "73.4");
 
-        Assert.Equal(73.4, received);
+        received.ShouldBe(73.4);
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public class MqttOilLevelClientTests
         await client.StartAsync(CancellationToken.None);
         harness.RaiseMessageReceived("oiltank/test", "not-a-number");
 
-        Assert.Equal(0, receivedCount);
+        receivedCount.ShouldBe(0);
     }
 
     [Fact]
@@ -188,7 +188,7 @@ public class MqttOilLevelClientTests
         var client = new MqttOilLevelClient(CreateOptions(), NullLogger<MqttOilLevelClient>.Instance, harness.Client);
 
         await client.StartAsync(CancellationToken.None);
-        Assert.Equal(1, harness.ConnectCalls);
+        harness.ConnectCalls.ShouldBe(1);
 
         harness.RaiseDisconnected();
 
@@ -198,7 +198,7 @@ public class MqttOilLevelClientTests
             await Task.Delay(10);
         }
 
-        Assert.Equal(2, harness.ConnectCalls);
+        harness.ConnectCalls.ShouldBe(2);
     }
 
     [Fact]
@@ -210,7 +210,7 @@ public class MqttOilLevelClientTests
 
         await client.DisposeAsync();
 
-        Assert.Equal(1, harness.DisconnectCalls);
+        harness.DisconnectCalls.ShouldBe(1);
         harness.Client.Received(1).Dispose();
     }
 
@@ -225,7 +225,7 @@ public class MqttOilLevelClientTests
 
         await client.DisposeAsync();
 
-        Assert.Equal(0, harness.DisconnectCalls);
+        harness.DisconnectCalls.ShouldBe(0);
         harness.Client.Received(1).Dispose();
     }
 }

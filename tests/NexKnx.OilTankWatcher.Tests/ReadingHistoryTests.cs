@@ -14,10 +14,10 @@ public class ReadingHistoryTests
         history.Add(new LevelSample(now.AddMinutes(-1), 75));
         history.Add(new LevelSample(now, 70));
 
-        Assert.Equal(3, history.Samples.Count);
-        Assert.Equal(80, history.Samples[0].Percent);
-        Assert.Equal(75, history.Samples[1].Percent);
-        Assert.Equal(70, history.Samples[2].Percent);
+        history.Samples.Count.ShouldBe(3);
+        history.Samples[0].Percent.ShouldBe(80);
+        history.Samples[1].Percent.ShouldBe(75);
+        history.Samples[2].Percent.ShouldBe(70);
     }
 
     [Fact]
@@ -30,8 +30,8 @@ public class ReadingHistoryTests
         history.Add(new LevelSample(now.AddDays(-40), 90));
         history.Add(new LevelSample(now, 60));
 
-        Assert.Single(history.Samples);
-        Assert.Equal(60, history.Samples[0].Percent);
+        history.Samples.ShouldHaveSingleItem();
+        history.Samples[0].Percent.ShouldBe(60);
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public class ReadingHistoryTests
         history.Add(new LevelSample(now.AddDays(-10), 90));
         history.Add(new LevelSample(now, 60));
 
-        Assert.Equal(2, history.Samples.Count);
+        history.Samples.Count.ShouldBe(2);
     }
 
     [Fact]
@@ -59,6 +59,6 @@ public class ReadingHistoryTests
         history.Add(new LevelSample(baseline, 90));
         history.Add(new LevelSample(baseline.AddDays(10), 60));
 
-        Assert.Equal(2, history.Samples.Count);
+        history.Samples.Count.ShouldBe(2);
     }
 }
