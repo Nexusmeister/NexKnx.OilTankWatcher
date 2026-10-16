@@ -12,7 +12,7 @@ public class FaultDetectorTests
 
         var faulty = detector.IsFaulty(start.AddHours(1));
 
-        Assert.False(faulty);
+        faulty.ShouldBeFalse();
     }
 
     [Fact]
@@ -23,7 +23,7 @@ public class FaultDetectorTests
 
         var faulty = detector.IsFaulty(start.AddHours(12).AddMinutes(1));
 
-        Assert.True(faulty);
+        faulty.ShouldBeTrue();
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class FaultDetectorTests
         detector.MarkValid(start.AddHours(11));
         var faulty = detector.IsFaulty(start.AddHours(12).AddMinutes(1));
 
-        Assert.False(faulty);
+        faulty.ShouldBeFalse();
     }
 
     [Fact]
@@ -47,6 +47,6 @@ public class FaultDetectorTests
         detector.MarkValid(start);
         var faulty = detector.IsFaulty(start.AddHours(12).AddSeconds(1));
 
-        Assert.True(faulty);
+        faulty.ShouldBeTrue();
     }
 }

@@ -184,7 +184,7 @@ public sealed class WorkerTests
             await Task.Delay(10);
         }
 
-        Assert.True(StartAsyncCallCount(mqtt) > 0, "MqttOilLevelClient.StartAsync wurde nicht innerhalb des Timeouts aufgerufen.");
+        (StartAsyncCallCount(mqtt) > 0).ShouldBeTrue("MqttOilLevelClient.StartAsync wurde nicht innerhalb des Timeouts aufgerufen.");
     }
 
     [Fact]
@@ -200,16 +200,16 @@ public sealed class WorkerTests
 
         RaiseValue(mqtt, 60);
 
-        Assert.True(await WaitForSignalAsync(knx.FaultWritten), "Auswertung wurde nicht innerhalb des Timeouts abgeschlossen.");
+        (await WaitForSignalAsync(knx.FaultWritten)).ShouldBeTrue("Auswertung wurde nicht innerhalb des Timeouts abgeschlossen.");
 
-        Assert.Single(knx.PercentWrites);
-        Assert.Equal(60, knx.PercentWrites[0]);
-        Assert.Single(knx.LiterWrites);
-        Assert.Equal(600, knx.LiterWrites[0]);
-        Assert.Single(knx.WarningWrites);
-        Assert.False(knx.WarningWrites[0]);
-        Assert.Single(knx.FaultWrites);
-        Assert.False(knx.FaultWrites[0]);
+        knx.PercentWrites.ShouldHaveSingleItem();
+        knx.PercentWrites[0].ShouldBe(60);
+        knx.LiterWrites.ShouldHaveSingleItem();
+        knx.LiterWrites[0].ShouldBe(600);
+        knx.WarningWrites.ShouldHaveSingleItem();
+        knx.WarningWrites[0].ShouldBeFalse();
+        knx.FaultWrites.ShouldHaveSingleItem();
+        knx.FaultWrites[0].ShouldBeFalse();
 
         await worker.StopAsync(CancellationToken.None);
     }
@@ -227,7 +227,7 @@ public sealed class WorkerTests
 
         // Erster Wert etabliert eine Baseline für den PlausibilityFilter.
         RaiseValue(mqtt, 50);
-        Assert.True(await WaitForSignalAsync(knx.FaultWritten));
+        (await WaitForSignalAsync(knx.FaultWritten)).ShouldBeTrue();
         knx.ResetFaultSignal();
 
         // Sprung weit über MaxStepPercent (10) hinaus - muss verworfen werden.
@@ -238,8 +238,8 @@ public sealed class WorkerTests
         // (fälschliche) Auswertung Zeit hätte, aufzulaufen.
         await Task.Delay(TimeSpan.FromMilliseconds(500));
 
-        Assert.Single(knx.PercentWrites);
-        Assert.Equal(50, knx.PercentWrites[0]);
+        knx.PercentWrites.ShouldHaveSingleItem();
+        knx.PercentWrites[0].ShouldBe(50);
 
         await worker.StopAsync(CancellationToken.None);
     }
@@ -257,12 +257,12 @@ public sealed class WorkerTests
         await WaitUntilMqttStartedAsync(mqtt);
 
         RaiseValue(mqtt, 55);
-        Assert.True(await WaitForSignalAsync(knx.FaultWritten));
+        (await WaitForSignalAsync(knx.FaultWritten)).ShouldBeTrue();
 
         // Der zuletzt persistierte Sample ist erst 5 Minuten alt - der
         // frisch empfangene Messwert darf daher keinen erneuten
         // Tageswert-Persistiervorgang auslösen.
-        Assert.Empty(history.AppendedSamples);
+        history.AppendedSamples.ShouldBeEmpty();
 
         await worker.StopAsync(CancellationToken.None);
     }
@@ -311,8 +311,8 @@ public sealed class WorkerTests
         await knx.Gateway.Received(1).ConnectAsync(Arg.Any<CancellationToken>());
 
         RaiseValue(mqtt, 60);
-        Assert.True(await WaitForSignalAsync(knx.FaultWritten));
-        Assert.Single(knx.PercentWrites);
+        (await WaitForSignalAsync(knx.FaultWritten)).ShouldBeTrue();
+        knx.PercentWrites.ShouldHaveSingleItem();
 
         await worker.StopAsync(CancellationToken.None);
     }
@@ -338,9 +338,9 @@ public sealed class WorkerTests
         await WaitUntilMqttStartedAsync(mqtt);
 
         RaiseValue(mqtt, 50);
-        Assert.True(await WaitForSignalAsync(knx.FaultWritten));
+        (await WaitForSignalAsync(knx.FaultWritten)).ShouldBeTrue();
 
-        Assert.Empty(knx.RuntimeDaysWrites);
+        knx.RuntimeDaysWrites.ShouldBeEmpty();
 
         await worker.StopAsync(CancellationToken.None);
     }
@@ -366,6 +366,6 @@ public sealed class WorkerTests
         RaiseValue(mqtt, 42);
         await Task.Delay(TimeSpan.FromMilliseconds(500));
 
-        Assert.Empty(knx.PercentWrites);
+        knx.PercentWrites.ShouldBeEmpty();
     }
 }

@@ -13,8 +13,8 @@ public class MqttPayloadParsingTests
     {
         var result = MqttOilLevelClient.TryParsePercent(payload, out var percent);
 
-        Assert.True(result);
-        Assert.Equal(expected, percent);
+        result.ShouldBeTrue();
+        percent.ShouldBe(expected);
     }
 
     [Fact]
@@ -22,8 +22,8 @@ public class MqttPayloadParsingTests
     {
         var result = MqttOilLevelClient.TryParsePercent("{\"value\": 55.2}", out var percent);
 
-        Assert.True(result);
-        Assert.Equal(55.2, percent);
+        result.ShouldBeTrue();
+        percent.ShouldBe(55.2);
     }
 
     [Theory]
@@ -34,6 +34,6 @@ public class MqttPayloadParsingTests
     {
         var result = MqttOilLevelClient.TryParsePercent(payload, out _);
 
-        Assert.False(result);
+        result.ShouldBeFalse();
     }
 }

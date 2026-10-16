@@ -19,7 +19,7 @@ public class SqliteHistoryRepositoryTests
 
         var result = await repository.LoadRecentAsync(TimeSpan.FromDays(30), CancellationToken.None);
 
-        Assert.Empty(result);
+        result.ShouldBeEmpty();
     }
 
     [Fact]
@@ -31,9 +31,9 @@ public class SqliteHistoryRepositoryTests
         await repository.AppendAsync(sample, CancellationToken.None);
         var result = await repository.LoadRecentAsync(TimeSpan.FromDays(30), CancellationToken.None);
 
-        Assert.Single(result);
-        Assert.Equal(sample.Percent, result[0].Percent);
-        Assert.Equal(sample.Timestamp, result[0].Timestamp);
+        result.ShouldHaveSingleItem();
+        result[0].Percent.ShouldBe(sample.Percent);
+        result[0].Timestamp.ShouldBe(sample.Timestamp);
     }
 
     [Fact]
@@ -47,8 +47,8 @@ public class SqliteHistoryRepositoryTests
 
         var result = await repository.LoadRecentAsync(TimeSpan.FromDays(30), CancellationToken.None);
 
-        Assert.Single(result);
-        Assert.Equal(61, result[0].Percent);
+        result.ShouldHaveSingleItem();
+        result[0].Percent.ShouldBe(61);
     }
 
     [Fact]
@@ -63,8 +63,8 @@ public class SqliteHistoryRepositoryTests
 
         var result = await repository.LoadRecentAsync(TimeSpan.FromDays(30), CancellationToken.None);
 
-        Assert.Equal(2, result.Count);
-        Assert.DoesNotContain(result, s => s.Percent == 90);
+        result.Count.ShouldBe(2);
+        result.ShouldNotContain(s => s.Percent == 90);
     }
 
     [Fact]
@@ -79,9 +79,9 @@ public class SqliteHistoryRepositoryTests
 
         var result = await repository.LoadRecentAsync(TimeSpan.FromDays(30), CancellationToken.None);
 
-        Assert.Equal(80, result[0].Percent);
-        Assert.Equal(70, result[1].Percent);
-        Assert.Equal(60, result[2].Percent);
+        result[0].Percent.ShouldBe(80);
+        result[1].Percent.ShouldBe(70);
+        result[2].Percent.ShouldBe(60);
     }
 
     [Fact]
@@ -98,8 +98,8 @@ public class SqliteHistoryRepositoryTests
         // Großes Retention-Fenster, damit wir wirklich alles sehen, was nach dem Prune noch da ist.
         var result = await repository.LoadRecentAsync(TimeSpan.FromDays(3650), CancellationToken.None);
 
-        Assert.Single(result);
-        Assert.Equal(60, result[0].Percent);
+        result.ShouldHaveSingleItem();
+        result[0].Percent.ShouldBe(60);
     }
 
     [Fact]
@@ -112,6 +112,6 @@ public class SqliteHistoryRepositoryTests
         await repository.InitializeAsync(CancellationToken.None);
 
         var result = await repository.LoadRecentAsync(TimeSpan.FromDays(30), CancellationToken.None);
-        Assert.Single(result);
+        result.ShouldHaveSingleItem();
     }
 }
