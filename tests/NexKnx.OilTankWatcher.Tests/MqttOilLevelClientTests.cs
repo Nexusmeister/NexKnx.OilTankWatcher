@@ -16,10 +16,15 @@ namespace NexKnx.OilTankWatcher.Tests;
 public sealed class FakeMqttClient : IMqttClient
 {
     public event Func<MqttApplicationMessageReceivedEventArgs, Task>? ApplicationMessageReceivedAsync;
+    public event Func<MqttClientDisconnectedEventArgs, Task>? DisconnectedAsync;
+
+    // Von IMqttClient vorgeschrieben, aber von diesem Fake nie ausgeloest -
+    // CS0067 ("Ereignis wird nie verwendet") ist hier unvermeidbar und erwartet.
+#pragma warning disable CS0067
     public event Func<MqttClientConnectedEventArgs, Task>? ConnectedAsync;
     public event Func<MqttClientConnectingEventArgs, Task>? ConnectingAsync;
-    public event Func<MqttClientDisconnectedEventArgs, Task>? DisconnectedAsync;
     public event Func<MQTTnet.Diagnostics.PacketInspection.InspectMqttPacketEventArgs, Task>? InspectPacketAsync;
+#pragma warning restore CS0067
 
     public bool IsConnected { get; private set; }
     public MqttClientOptions? Options { get; private set; }
