@@ -196,6 +196,8 @@ public sealed class Worker : BackgroundService
             return;
         }
 
+        _logger.LogRawValueReceived(rawPercent);
+
         var now = DateTimeOffset.UtcNow;
         var smoothed = _medianSmoother.Add(rawPercent);
         _faultDetector.MarkValid(now);

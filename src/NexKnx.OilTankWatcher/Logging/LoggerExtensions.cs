@@ -18,6 +18,9 @@ internal static partial class LoggerExtensions
     [LoggerMessage(Level = LogLevel.Information, Message = "{Count} persisted history values loaded.")]
     public static partial void LogHistoryLoaded(this ILogger logger, int count);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "Raw reading received: {RawPercent:0.0}%.")]
+    public static partial void LogRawValueReceived(this ILogger logger, double rawPercent);
+
     [LoggerMessage(Level = LogLevel.Information, Message = "KNX updated: {Percent:0.0}% ({Liters:0} l), raw reading={RawPercent:0.0}%, warning={Warning}, fault={Fault}.")]
     public static partial void LogKnxUpdated(this ILogger logger, double percent, double liters, double rawPercent, bool warning, bool fault);
 
